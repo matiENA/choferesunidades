@@ -54,15 +54,67 @@
         let state = { unidad: null, chofer: null };
 
         async function cargarDatos() {
-            const { data: units } = await db.from('units').select('id, tractor, estado').eq('estado', 'disponible');
+            // 1. Cambiamos el select() por un asterisco (*) para traer todas las columnas de fechas
+            const { data: units } = await db.from('units').select('*').eq('estado', 'disponible');
             const contU = document.getElementById('contenedor-unidades');
             contU.innerHTML = '';
-            units?.forEach(u => contU.innerHTML += `<div id="u-${u.id}" onclick="seleccionar('unidad', '${u.id}')" class="tarjeta-unidad cursor-pointer bg-white border-2 border-slate-200 p-3 rounded-lg flex justify-between font-bold text-slate-700 hover:border-indigo-400">${u.tractor}</div>`);
+            
+            units?.forEach(u => {
+                // -- LÓGICA DE VENCIMIENTOS --
+                let estadoVencimiento = 'ok';
+                const hoy = new Date();
+                const limiteMes = new Date();
+                limiteMes.setMonth(hoy.getMonth() + 1); // Exactamente 1 mes hacia adelante
+                
+                // Lista de columnas que contienen fechas (Ajustá los nombres si tenés más o menos)
+                const columnasFechas = ['vtv_tr', 'mas_tr', 'vtv_semi', 'mas_semi', 'esp_es', 'vi', 've'];
+                
+                for (let col of columnasFechas) {
+                    if (u[col]) {
+                        const fecha = new Date(u[col]);
+                        if (fecha < hoy) {
+                            estadoVencimiento = 'vencido';
+                            break; // Si encontramos tan solo UN documento vencido, cortamos y queda ROJO
+                        } else if (fecha <= limiteMes) {
+                            estadoVencimiento = 'alerta'; // Si está por vencer, queda en AMARILLO (pero sigue buscando por si otro está vencido)
+                        }
+                    }
+                }
 
+                // -- ARMADO DE UI (BADGES) --
+                let badgeVencimiento = '';
+                if (estadoVencimiento === 'vencido') {
+                    badgeVencimiento = '<span class="bg-red-100 text-red-700 border border-red-300 text-[10px] px-2 py-0.5 rounded font-black ml-2 shadow-sm tracking-wide">⚠️ VENCIDA</span>';
+                } else if (estadoVencimiento === 'alerta') {
+                    badgeVencimiento = '<span class="bg-yellow-100 text-yellow-800 border border-yellow-300 text-[10px] px-2 py-0.5 rounded font-black ml-2 shadow-sm tracking-wide">⏳ REVISAR</span>';
+                }
+
+                // Badge de estado independiente
+                const badgeEstado = `<span class="text-[10px] font-bold uppercase bg-slate-100 border border-slate-200 px-2 py-1 rounded text-slate-500">${u.estado}</span>`;
+
+                // Inyectamos la tarjeta en el HTML
+                contU.innerHTML += `
+                <div id="u-${u.id}" onclick="seleccionar('unidad', '${u.id}')" class="tarjeta-unidad cursor-pointer bg-white border-2 border-slate-200 p-3 rounded-lg flex justify-between items-center transition hover:border-indigo-400 group">
+                    <div class="flex items-center">
+                        <span class="font-bold text-slate-700 text-lg group-hover:text-indigo-700">${u.tractor}</span>
+                        ${badgeVencimiento}
+                    </div>
+                    ${badgeEstado}
+                </div>`;
+            });
+
+            // 2. Carga de Choferes (Se mantiene igual)
             const { data: chofs } = await db.from('choferes').select('id, nombre, estado').eq('estado', 'inactivo');
             const contC = document.getElementById('contenedor-choferes');
             contC.innerHTML = '';
-            chofs?.forEach(c => contC.innerHTML += `<div id="c-${c.id}" onclick="seleccionar('chofer', '${c.id}')" class="tarjeta-chofer cursor-pointer bg-white border-2 border-slate-200 p-3 rounded-lg flex justify-between font-bold text-slate-700 hover:border-indigo-400">${c.nombre}</div>`);
+            chofs?.forEach(c => {
+                const badgeEstadoChofer = `<span class="text-[10px] font-bold uppercase bg-slate-100 border border-slate-200 px-2 py-1 rounded text-slate-500">${c.estado}</span>`;
+                contC.innerHTML += `
+                <div id="c-${c.id}" onclick="seleccionar('chofer', '${c.id}')" class="tarjeta-chofer cursor-pointer bg-white border-2 border-slate-200 p-3 rounded-lg flex justify-between items-center transition hover:border-indigo-400 group">
+                    <span class="font-bold text-slate-700 text-lg group-hover:text-indigo-700">${c.nombre}</span>
+                    ${badgeEstadoChofer}
+                </div>`;
+            });
         }
 
         function seleccionar(tipo, id) {
