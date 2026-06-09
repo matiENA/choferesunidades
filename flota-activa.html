@@ -2,229 +2,58 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitor de Flota | En Ruta y Tránsito</title>
+    <title>Monitor de Flota</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-200 min-h-screen flex flex-col font-sans">
-
-    <header class="bg-slate-900 text-white shadow-md z-10 flex flex-col md:flex-row justify-between items-center px-6 py-3 border-b-4 border-blue-500">
-        
-        <div class="flex items-center gap-4 mb-3 md:mb-0">
-            <h1 class="text-xl font-black tracking-widest text-white">SISTEMA FLOTA</h1>
-            <span class="bg-slate-700 text-slate-300 text-xs font-bold px-2 py-1 rounded uppercase tracking-wide">Vista de Lectura</span>
-        </div>
-
-        <nav class="flex gap-2 bg-slate-800 p-1.5 rounded-lg shadow-inner">
-            <a href="Index.html" class="px-5 py-2 text-slate-400 hover:text-white hover:bg-slate-700 text-sm font-bold rounded flex items-center gap-2 transition">
-                🚀 Operaciones
-            </a>
-            <a href="flota-activa.html" class="px-5 py-2 bg-blue-600 text-white text-sm font-bold rounded shadow-sm flex items-center gap-2 pointer-events-none">
-                📊 Monitor en Ruta
-            </a>
+    <header class="bg-slate-900 text-white shadow-md z-10 flex justify-between items-center px-6 py-3 border-b-4 border-blue-500">
+        <h1 class="text-xl font-black tracking-widest text-white">SISTEMA FLOTA <span class="text-xs bg-slate-700 px-2 py-1 rounded ml-2">LECTURA</span></h1>
+        <nav class="flex gap-2 bg-slate-800 p-1.5 rounded-lg">
+            <a href="Index.html" class="px-4 py-2 text-slate-400 hover:text-white text-sm font-bold">🚀 Iniciar Salida</a>
+            <a href="gestion-diagramas.html" class="px-4 py-2 text-slate-400 hover:text-white text-sm font-bold">🛣️ Gestión en Ruta</a>
+            <a href="flota-activa.html" class="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded">📊 Monitor</a>
         </nav>
-
-        <div class="mt-3 md:mt-0 flex items-center gap-3">
-            <button onclick="cargarMonitor()" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-sm font-bold transition flex items-center gap-2">
-                🔄 Actualizar
-            </button>
-            <div id="status-indicator" class="text-sm font-bold bg-slate-800 px-3 py-1.5 rounded text-slate-300 border border-slate-700">Conectando...</div>
-        </div>
     </header>
 
-    <main class="flex-1 p-6 overflow-y-auto">
-        <div class="max-w-7xl mx-auto space-y-6">
-            
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                <div class="flex gap-4">
-                    <div class="px-4 py-2 border-l-4 border-blue-500 bg-slate-50 rounded-r">
-                        <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">Circulando</p>
-                        <p class="text-2xl font-black text-slate-800" id="count-circulando">-</p>
-                    </div>
-                    <div class="px-4 py-2 border-l-4 border-orange-500 bg-slate-50 rounded-r">
-                        <p class="text-slate-500 text-xs font-bold uppercase tracking-wider">En Tránsito / Taller</p>
-                        <p class="text-2xl font-black text-slate-800" id="count-transito">-</p>
-                    </div>
-                </div>
-                
-                <input type="text" id="searchMonitor" placeholder="Filtrar patente o chofer..." class="w-full md:w-72 p-2 text-sm border rounded bg-white focus:ring-2 focus:ring-blue-500 outline-none transition" onkeyup="filtrarMonitor()">
-            </div>
-
-            <section class="bg-white rounded-xl shadow-md overflow-hidden border border-slate-200">
-                <div class="p-3 bg-slate-800 flex justify-between items-center">
-                    <h2 class="text-lg font-bold text-white uppercase tracking-wide flex items-center gap-2">
-                        🔵 EQUIPOS CIRCULANDO
-                    </h2>
-                </div>
-                <div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="contenedor-circulando">
-                    </div>
-            </section>
-
-            <section class="bg-white rounded-xl shadow-md overflow-hidden border border-slate-200">
-                <div class="p-3 bg-orange-100 border-b border-orange-200 flex justify-between items-center">
-                    <h2 class="text-lg font-bold text-orange-900 uppercase tracking-wide flex items-center gap-2">
-                        🟠 EN TRÁNSITO / REPARACIÓN
-                    </h2>
-                </div>
-                <div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="contenedor-transito">
-                    </div>
-            </section>
-
-        </div>
+    <main class="flex-1 p-6">
+        <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="contenedor-monitor"></div>
     </main>
 
     <script>
-        // CONFIGURACIÓN BD
-        const SUPABASE_URL = 'https://laspqhmkrbmuxfgmnudf.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_HowwuqG31WUNjO6vAjxZmQ_yRSzV-0d';
-        const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        function formatearFecha(fechaIso) {
-            const fecha = new Date(fechaIso);
-            return fecha.toLocaleString('es-AR', { day: '2-digit', month: 'short', hour: '2-digit', minute:'2-digit' });
-        }
+        const db = supabase.createClient('https://laspqhmkrbmuxfgmnudf.supabase.co', 'sb_publishable_HowwuqG31WUNjO6vAjxZmQ_yRSzV-0d');
 
         async function cargarMonitor() {
-            document.getElementById('status-indicator').innerText = 'Actualizando...';
-            document.getElementById('status-indicator').className = 'text-sm font-bold bg-amber-500 px-3 py-1 rounded text-white';
+            // Ya no buscamos agrupaciones raras, simplemente pedimos los diagramas que el sistema sabe que están abiertos
+            const { data: activos } = await db.from('movimientos')
+                .select('fecha_inicio, units(tractor, estado), choferes(nombre)')
+                .eq('estado_diagrama', 'abierto')
+                .order('fecha_inicio', { ascending: false });
 
-            const { data: movimientos, error } = await db
-                .from('movimientos')
-                .select(`
-                    fecha_hora,
-                    tipo_operacion,
-                    id_unidad,
-                    id_chofer,
-                    units ( tractor, estado ),
-                    choferes ( nombre, estado )
-                `)
-                .order('fecha_hora', { ascending: false });
+            const cont = document.getElementById('contenedor-monitor');
+            cont.innerHTML = '';
 
-            if (error) {
-                console.error("Error al cargar datos:", error);
-                document.getElementById('status-indicator').innerText = 'Error de lectura';
-                document.getElementById('status-indicator').className = 'text-sm font-bold bg-red-600 px-3 py-1 rounded text-white';
-                return;
-            }
+            activos?.forEach(mov => {
+                const isRuta = (mov.units?.estado === 'circulando');
+                const color = isRuta ? 'bg-blue-500' : 'bg-orange-500';
+                const badge = isRuta ? 'EN RUTA' : 'TALLER / TRÁNSITO';
 
-            // Separar en dos grupos lógicos
-            const circulando = [];
-            const enTransito = [];
-            const unidadesProcesadas = new Set(); 
-
-            movimientos.forEach(mov => {
-                if (!unidadesProcesadas.has(mov.id_unidad)) {
-                    unidadesProcesadas.add(mov.id_unidad);
-                    
-                    const estadoUnidad = mov.units?.estado?.toLowerCase() || '';
-
-                    // Lógica para Circulando
-                    if (['inicia_diagrama', 'cambio_unidad_transito'].includes(mov.tipo_operacion) && 
-                        (estadoUnidad === 'circulando' || estadoUnidad === 'activo')) {
-                        circulando.push(mov);
-                    }
-                    // Lógica para Tránsito / Taller
-                    else if (mov.tipo_operacion === 'transito' && 
-                            (estadoUnidad === 'reparacion en transito' || estadoUnidad === 'reparacion')) {
-                        enTransito.push(mov);
-                    }
-                }
+                cont.innerHTML += `
+                    <div class="bg-white border rounded-lg p-5 shadow relative overflow-hidden">
+                        <div class="absolute left-0 top-0 bottom-0 w-1.5 ${color}"></div>
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-2xl font-black text-slate-800 pl-2">${mov.units?.tractor}</h3>
+                            <span class="text-[10px] font-bold px-2 py-1 rounded border uppercase ${isRuta ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-orange-50 text-orange-700 border-orange-200'}">${badge}</span>
+                        </div>
+                        <p class="font-bold text-slate-600 pl-2">🧑‍✈️ ${mov.choferes?.nombre}</p>
+                        <p class="text-xs text-slate-400 pl-2 mt-4 border-t pt-2">Salida: ${new Date(mov.fecha_inicio).toLocaleDateString()} - ${new Date(mov.fecha_inicio).toLocaleTimeString()}</p>
+                    </div>
+                `;
             });
-
-            // Actualizar Contadores
-            document.getElementById('count-circulando').innerText = circulando.length;
-            document.getElementById('count-transito').innerText = enTransito.length;
-
-            // RENDERIZAR CIRCULANDO
-            const contCirculando = document.getElementById('contenedor-circulando');
-            contCirculando.innerHTML = '';
-            if (circulando.length === 0) {
-                contCirculando.innerHTML = '<p class="text-slate-500 text-sm p-4 col-span-full">No hay unidades en ruta.</p>';
-            } else {
-                circulando.forEach(eq => contCirculando.innerHTML += generarTarjeta(eq, 'circulando'));
-            }
-
-            // RENDERIZAR TRÁNSITO
-            const contTransito = document.getElementById('contenedor-transito');
-            contTransito.innerHTML = '';
-            if (enTransito.length === 0) {
-                contTransito.innerHTML = '<p class="text-slate-500 text-sm p-4 col-span-full">No hay unidades reportadas en tránsito o taller.</p>';
-            } else {
-                enTransito.forEach(eq => contTransito.innerHTML += generarTarjeta(eq, 'transito'));
-            }
-
-            document.getElementById('status-indicator').innerText = 'Actualizado';
-            document.getElementById('status-indicator').className = 'text-sm font-bold bg-emerald-600 px-3 py-1 rounded text-white';
-        }
-
-        // Función constructora de HTML para no repetir código
-        function generarTarjeta(eq, tipo) {
-            const patente = eq.units?.tractor || 'Desconocido';
-            const chofer = eq.choferes?.nombre || 'Desconocido';
-            const estadoChofer = eq.choferes?.estado || '';
-            const fecha = formatearFecha(eq.fecha_hora);
-            
-            // Lógica visual dependiendo si es Circulando o Tránsito
-            const isCirculando = tipo === 'circulando';
-            const colorBarra = isCirculando ? 'bg-blue-500' : 'bg-orange-500';
-            const badgeClase = isCirculando ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-orange-100 text-orange-800 border-orange-200';
-            const badgeTexto = isCirculando ? 'En Ruta' : 'Taller / Tránsito';
-            const iconoOperacion = isCirculando ? (eq.tipo_operacion === 'cambio_unidad_transito' ? '🔄 CAMBIO UNIDAD' : '🟢 INICIO') : '🟠 TRÁNSITO';
-
-            // Alerta visual si el chofer ya fue reasignado a otra unidad
-            let avisoChofer = '';
-            if (!isCirculando && estadoChofer.toLowerCase() === 'activo') {
-                avisoChofer = '<span class="block text-xs text-emerald-600 font-bold mt-1">⚠️ Chofer ya reasignado a otro equipo</span>';
-            }
-
-            return `
-                <div class="monitor-card bg-white border border-slate-200 rounded-lg p-4 shadow-sm hover:shadow-md transition relative overflow-hidden">
-                    <div class="absolute left-0 top-0 bottom-0 w-1 ${colorBarra}"></div>
-                    
-                    <div class="flex justify-between items-start mb-3">
-                        <div>
-                            <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Unidad</p>
-                            <h3 class="text-xl font-black text-slate-800 tarjeta-texto">${patente}</h3>
-                        </div>
-                        <span class="text-xs font-bold px-2 py-1 rounded border uppercase ${badgeClase}">${badgeTexto}</span>
-                    </div>
-
-                    <div class="mb-3">
-                        <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Chofer que reportó</p>
-                        <p class="text-base font-bold text-slate-700 tarjeta-texto">🧑‍✈️ ${chofer}</p>
-                        ${avisoChofer}
-                    </div>
-
-                    <div class="bg-slate-50 p-2 rounded border border-slate-100 mt-4">
-                        <div class="flex justify-between items-center text-xs text-slate-500 font-medium">
-                            <span>${iconoOperacion}</span>
-                            <span>🕒 ${fecha}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Buscador global (Filtra en ambas listas a la vez)
-        function filtrarMonitor() {
-            const filtro = document.getElementById('searchMonitor').value.toLowerCase();
-            const tarjetas = document.getElementsByClassName('monitor-card');
-
-            for (let i = 0; i < tarjetas.length; i++) {
-                let textos = tarjetas[i].querySelectorAll('.tarjeta-texto');
-                let contenido = Array.from(textos).map(t => t.innerText.toLowerCase()).join(' ');
-                
-                if (contenido.includes(filtro)) {
-                    tarjetas[i].style.display = "";
-                } else {
-                    tarjetas[i].style.display = "none";
-                }
-            }
         }
 
         cargarMonitor();
-        setInterval(cargarMonitor, 60000); 
+        setInterval(cargarMonitor, 10000); // Se actualiza solo cada 10 seg
     </script>
 </body>
 </html>
