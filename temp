@@ -1,0 +1,11 @@
+UPDATE public.units
+SET 
+    -- A la izquierda tu tabla oficial, a la derecha la temporal
+    producto = temp_importacion.producto,
+   
+FROM 
+    public.temp_importacion
+WHERE 
+    -- Acá le decimos que la "llave" de cruce es la patente
+    public.units.tractor = temp_importacion.tractor;
+    ublic.units.semi = temp_importacion.semi;
