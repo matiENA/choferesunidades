@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión en Ruta</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-200 min-h-screen flex flex-col font-sans">
+    <header class="bg-slate-900 text-white shadow-md z-10 flex justify-between items-center px-6 py-3 border-b-4 border-emerald-500">
+        <h1 class="text-xl font-black tracking-widest text-white">SISTEMA FLOTA</h1>
+        <nav class="flex gap-2 bg-slate-800 p-1.5 rounded-lg">
+            <a href="Index.html" class="px-4 py-2 text-slate-400 hover:text-white text-sm font-bold">🚀 Iniciar Salida</a>
+            <a href="gestion-diagramas.html" class="px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded">🛣️ Gestión en Ruta</a>
+            <a href="flota-activa.html" class="px-4 py-2 text-slate-400 hover:text-white text-sm font-bold">📊 Monitor</a>
+        </nav>
+    </header>
+
+    <main class="flex-1 p-6 overflow-y-auto">
+        <div class="max-w-5xl mx-auto" id="contenedor-diagramas"></div>
+    </main>
+
+    <script>
+        const db = supabase.createClient('https://laspqhmkrbmuxfgmnudf.supabase.co', 'sb_publishable_HowwuqG31WUNjO6vAjxZmQ_yRSzV-0d');
+        let opcionesUnidades = '<option value="">Seleccione nueva unidad...</option>';
+
+        async function cargarDiagramasActivos() {
+            // 1. Cargamos unidades libres para el menú de reemplazo
+            const { data: libres } = await db.from('units').select('id, tractor').eq('estado', 'disponible');
+            opcionesUnidades = '<option value="">Seleccione nueva unidad...</option>';
+            libres?.forEach(u => opcionesUnidades += `<option value="${u.id}">${u.tractor}</option>`);
+
+            // 2. Cargamos diagramas abiertos
+            const { data: diagramas } = await db.from('movimientos')
+                .select('id, fecha_inicio, eventos_intermedios, id_chofer, id_unidad, units(tractor, estado), choferes(nombre, estado)')
+                .eq('estado_diagrama', 'abierto')
+                .order('fecha_inicio', { ascending: false });
+
+            const cont = document.getElementById('contenedor-diagramas');
+            cont.innerHTML = '';
+
+            diagramas?.forEach(diag => {
+                const eventos = diag.eventos_intermedios || [];
+                // Detectamos si el último evento fue una rotura
+                const estaEnTransito = eventos.length > 0 && eventos[eventos.length - 1].evento === 'Tránsito';
+                
+                const jsonStr = encodeURIComponent(JSON.stringify({ 
+                    id: diag.id, 
+                    id_unidad_vieja: diag.id_unidad,
+                    id_chofer: diag.id_chofer,
+                    evts: eventos 
+                }));
+
+                // Renderizado condicional: Si está en tránsito, mostramos el panel de resolución
+                let botonesHTML = '';
+                if (estaEnTransito) {
+                    botonesHTML = `
+                        <div class="w-full bg-orange-50 p-4 border border-orange-200 rounded-lg mt-3">
+                            <h4 class="text-orange-800 font-bold mb-2 flex items-center gap-2">⚠️ UNIDAD EN TALLER / ESPERANDO</h4>
+                            <div class="flex flex-col md:flex-row gap-4">
+                                <div class="flex-1">
+                                    <label class="text-xs font-bold text-slate-500 uppercase">¿Qué hace el Chofer?</label>
+                                    <select id="sel-chofer-${diag.id}" class="w-full mt-1 p-2 border rounded" onchange="toggleNuevaUnidad('${diag.id}')">
+                                        <option value="espera">Pasivo en base</option>
+                                        <option value="nueva_unidad">Cambia a Nueva Unidad</option>
+                                    </select>
+                                    <select id="sel-unidad-${diag.id}" class="w-full mt-2 p-2 border rounded hidden bg-blue-50 border-blue-300">
+                                        ${opcionesUnidades}
+                                    </select>
+                                </div>
+                                <div class="flex-1">
+                                    <label class="text-xs font-bold text-slate-500 uppercase">¿Estado de Unidad Rota?</label>
+                                    <select id="sel-rotura-${diag.id}" class="w-full mt-1 p-2 border rounded">
+                                        <option value="alta">Alta Rápida (Vuelve a Circulando)</option>
+                                        <option value="prolongada">Reparación Prolongada (Queda en Base)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button onclick="resolverTransito('${jsonStr}', '${diag.id}')" class="mt-4 w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 rounded shadow transition">
+                                ✔️ APLICAR RESOLUCIÓN Y CONTINUAR VIAJE
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    botonesHTML = `
+                        <div class="flex gap-2 w-full md:w-auto flex-wrap mt-4 md:mt-0">
+                            <button onclick="marcarTransito('${jsonStr}')" class="bg-orange-100 hover:bg-orange-200 text-orange-800 font-bold py-2 px-4 rounded border border-orange-300 transition">🟠 Reportar Tránsito</button>
+                            <button onclick="terminar('${diag.id}')" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-4 rounded shadow transition">🔴 TERMINAR DIAGRAMA</button>
+                        </div>
+                    `;
+                }
+
+                // Color lateral de la tarjeta
+                const bordeColor = estaEnTransito ? 'border-orange-500' : 'border-emerald-500';
+
+                cont.innerHTML += `
+                    <div class="bg-white rounded-xl shadow p-5 mb-4 border-l-4 ${bordeColor} flex flex-col justify-between">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+                            <div>
+                                <h3 class="text-2xl font-black text-slate-800">${diag.units?.tractor}</h3>
+                                <p class="font-bold text-slate-600">🧑‍✈️ ${diag.choferes?.nombre}</p>
+                                <p class="text-xs text-slate-400 mt-1">Inicio: ${new Date(diag.fecha_inicio).toLocaleString()}</p>
+                            </div>
+                        </div>
+                        ${botonesHTML}
+                    </div>
+                `;
+            });
+        }
+
+        // Lógica de interfaz: Mostrar desplegable de unidades solo si elige cambiar
+        function toggleNuevaUnidad(id) {
+            const selectChofer = document.getElementById(`sel-chofer-${id}`).value;
+            const selectUnidad = document.getElementById(`sel-unidad-${id}`);
+            if (selectChofer === 'nueva_unidad') {
+                selectUnidad.classList.remove('hidden');
+            } else {
+                selectUnidad.classList.add('hidden');
+                selectUnidad.value = "";
+            }
+        }
+
+        // EL MOTOR DE RESOLUCIÓN DE CONFLICTOS
+        async function resolverTransito(jsonStr, diag_id) {
+            const data = JSON.parse(decodeURIComponent(jsonStr));
+            
+            const decisionChofer = document.getElementById(`sel-chofer-${diag_id}`).value;
+            const decisionUnidad = document.getElementById(`sel-rotura-${diag_id}`).value;
+            const nuevaUnidadId = document.getElementById(`sel-unidad-${diag_id}`).value;
+
+            if (decisionChofer === 'nueva_unidad' && !nuevaUnidadId) {
+                return alert("Por favor, seleccione el tractor de reemplazo para el chofer.");
+            }
+
+            // Armamos el registro para el historial JSON
+            const nuevoEvento = {
+                evento: "Resolución de Tránsito",
+                accion_chofer: decisionChofer,
+                accion_unidad: decisionUnidad,
+                fecha: new Date().toISOString()
+            };
+            const evts = [...data.evts, nuevoEvento];
+
+            // Escenario 1: Cambia de unidad y la vieja va a reparación prolongada
+            if (decisionChofer === 'nueva_unidad') {
+                // 1. Forzamos el estado de la unidad vieja (si era prolongada)
+                if (decisionUnidad === 'prolongada') {
+                    await db.from('units').update({ estado: 'reparacion' }).eq('id', data.id_unidad_vieja);
+                } else {
+                    await db.from('units').update({ estado: 'disponible' }).eq('id', data.id_unidad_vieja);
+                }
+                
+                // 2. Actualizamos el viaje con el nuevo camión (El trigger lo pondrá circulando)
+                await db.from('movimientos').update({ id_unidad: nuevaUnidadId, eventos_intermedios: evts }).eq('id', data.id);
+            } 
+            // Escenario 2: Esperó y sigue con la misma
+            else {
+                // El Trigger se marea si no cambiamos el id_unidad, así que forzamos manualmente la vuelta a ruta
+                await db.from('units').update({ estado: 'circulando' }).eq('id', data.id_unidad_vieja);
+                await db.from('choferes').update({ estado: 'activo' }).eq('id', data.id_chofer);
+                
+                // Guardamos el historial
+                await db.from('movimientos').update({ eventos_intermedios: evts }).eq('id', data.id);
+            }
+
+            cargarDiagramasActivos();
+        }
+
+        async function terminar(id_mov) {
+            if(!confirm("¿Cerrar diagrama y liberar chofer?")) return;
+            const { error } = await db.from('movimientos').update({ fecha_fin: new Date().toISOString(), estado_diagrama: 'cerrado' }).eq('id', id_mov).select();
+            if (error) alert("Error: " + error.message);
+            cargarDiagramasActivos();
+        }
+
+        async function marcarTransito(jsonStr) {
+            const motivo = prompt("Motivo del tránsito:");
+            if(!motivo) return;
+            const data = JSON.parse(decodeURIComponent(jsonStr));
+            const evts = [...data.evts, { evento: "Tránsito", motivo: motivo, fecha: new Date().toISOString() }];
+            const { error } = await db.from('movimientos').update({ eventos_intermedios: evts }).eq('id', data.id).select();
+            if (error) alert("Error: " + error.message);
+            cargarDiagramasActivos();
+        }
+
+        cargarDiagramasActivos();
+    </script>
+</body>
+</html>
