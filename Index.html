@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* Estilos para el scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
@@ -16,9 +15,27 @@
 </head>
 <body class="bg-slate-200 h-screen flex flex-col overflow-hidden font-sans">
 
-    <header class="bg-slate-900 text-white p-4 shadow-md z-10 flex justify-between items-center">
-        <h1 class="text-2xl font-black tracking-wider">PANEL DE CONTROL OPERATIVO</h1>
-        <div id="status-indicator" class="text-sm font-bold bg-slate-800 px-3 py-1 rounded text-slate-300">Sincronizando...</div>
+    <header class="bg-slate-900 text-white shadow-md z-10 flex flex-col md:flex-row justify-between items-center px-6 py-3 border-b-4 border-indigo-600">
+        
+        <div class="flex items-center gap-4 mb-3 md:mb-0">
+            <h1 class="text-xl font-black tracking-widest text-white">SISTEMA FLOTA</h1>
+        </div>
+
+        <nav class="flex gap-2 bg-slate-800 p-1.5 rounded-lg shadow-inner flex-wrap justify-center">
+            <a href="Index.html" class="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded shadow-sm flex items-center gap-2 pointer-events-none">
+                🚀 Operaciones
+            </a>
+            <a href="gestion-diagramas.html" class="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-700 text-sm font-bold rounded flex items-center gap-2 transition">
+                🛣️ Gestión en Ruta
+            </a>
+            <a href="flota-activa.html" class="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-700 text-sm font-bold rounded flex items-center gap-2 transition">
+                📊 Monitor
+            </a>
+        </nav>
+
+        <div class="mt-3 md:mt-0 min-w-[140px] text-right">
+            <span id="status-indicator" class="text-sm font-bold bg-slate-800 px-3 py-1.5 rounded text-slate-300 border border-slate-700">Sincronizando...</span>
+        </div>
     </header>
 
     <main class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 p-4 overflow-hidden">
@@ -65,17 +82,13 @@
     </footer>
 
     <script>
-        // 1. CONFIGURACIÓN BD
+        // CONFIGURACIÓN BD
         const SUPABASE_URL = 'https://laspqhmkrbmuxfgmnudf.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_HowwuqG31WUNjO6vAjxZmQ_yRSzV-0d';
         const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let state = {
-            unidadSeleccionada: null,
-            choferSeleccionado: null
-        };
+        let state = { unidadSeleccionada: null, choferSeleccionado: null };
 
-        // 2. RENDERIZADO
         function crearTarjeta(item, tipo) {
             const isUnidad = tipo === 'unidad';
             const titulo = isUnidad ? item.tractor : item.nombre;
@@ -99,7 +112,7 @@
 
         async function cargarDatos() {
             document.getElementById('status-indicator').innerText = 'Sincronizando...';
-            document.getElementById('status-indicator').className = 'text-sm font-bold bg-amber-500 px-3 py-1 rounded text-white';
+            document.getElementById('status-indicator').className = 'text-sm font-bold bg-amber-500 px-3 py-1.5 rounded text-white';
 
             const { data: units } = await db.from('units').select('id, tractor, estado').order('tractor');
             const contUnidades = document.getElementById('contenedor-unidades');
@@ -115,8 +128,8 @@
             state.choferSeleccionado = null;
             evaluarReglasLibres();
 
-            document.getElementById('status-indicator').innerText = 'Actualizado';
-            document.getElementById('status-indicator').className = 'text-sm font-bold bg-emerald-600 px-3 py-1 rounded text-white';
+            document.getElementById('status-indicator').innerText = 'Conectado';
+            document.getElementById('status-indicator').className = 'text-sm font-bold bg-emerald-600 px-3 py-1.5 rounded text-white';
             
             filtrarLista('unidades');
             filtrarLista('choferes');
@@ -138,12 +151,10 @@
             evaluarReglasLibres();
         }
 
-        // 4. MOTOR LIBRE (Sin validaciones estrictas)
         function evaluarReglasLibres() {
             const botones = ['btn-inicia', 'btn-termina', 'btn-transito', 'btn-cambio'];
             const feedback = document.getElementById('accion-feedback');
 
-            // Si falta seleccionar alguno de los dos, se bloquea todo
             if (!state.unidadSeleccionada || !state.choferSeleccionado) {
                 botones.forEach(id => document.getElementById(id).disabled = true);
                 feedback.innerText = "Selecciona 1 Unidad y 1 Chofer para habilitar las acciones";
@@ -151,7 +162,6 @@
                 return;
             }
 
-            // Si hay un chofer y una unidad seleccionados, se habilitan TODAS las acciones
             botones.forEach(id => document.getElementById(id).disabled = false);
             
             const eUnidad = state.unidadSeleccionada.estado;
