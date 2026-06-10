@@ -81,6 +81,7 @@
         let state = { unidad: null, chofer: null };
         let dataUnidades = [];
         let dataChoferes = [];
+        let operadorActual = "";
 
 async function cargarDatos() {
             // Descargamos todo
@@ -131,7 +132,7 @@ async function cargarDatos() {
             renderizarUnidades(unidadesFiltradas);
             renderizarChoferes(choferesFiltrados);
         }
-        
+
         function renderizarUnidades(lista) {
             const contU = document.getElementById('contenedor-unidades');
             contU.innerHTML = '';
@@ -214,18 +215,29 @@ async function cargarDatos() {
             document.getElementById('btn-inicia').disabled = !(state.unidad && state.chofer);
         }
 
+        async function verificarSesion() {
+            const { data: { session } } = await db.auth.getSession();
+            if (!session) {
+                window.location.href = 'login.html'; // Lo patea al login si no tiene sesión
+            } else {
+                operadorActual = session.user.email;
+                document.getElementById('status-indicator').innerText = "👤 " + operadorActual;
+                cargarDatos(); // Solo carga los datos si está logueado
+            }
+        }
+        
         async function registrarSalida() {
             document.getElementById('btn-inicia').innerText = "GUARDANDO...";
             await db.from('movimientos').insert([{ 
                 tipo_operacion: 'inicia_diagrama', 
                 id_unidad: state.unidad, 
-                id_chofer: state.chofer 
+                id_chofer: state.chofer,
+                operador: operadorActual // <--- Estampa quién abrió el viaje
             }]);
             location.reload(); 
-        }
-
-        // Iniciar la descarga de datos al abrir la página
-        cargarDatos();
+        }  
+        
+        verificarSesion();
     </script>
 </body>
 </html>
