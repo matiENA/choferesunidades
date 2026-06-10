@@ -14,30 +14,42 @@
 </head>
 <body class="bg-slate-200 min-h-screen flex flex-col font-sans">
     
-    <header class="bg-slate-900 text-white shadow-md z-20 flex flex-col md:flex-row items-center justify-between px-6 py-3 border-b-4 border-emerald-500">
+  <header class="bg-slate-900 text-white shadow-md z-20 flex flex-col md:flex-row items-center justify-between px-6 py-3 border-b-4 border-indigo-600 font-sans">
         <div class="w-full md:w-1/3 flex justify-center md:justify-start items-center mb-3 md:mb-0">
-            <h1 class="text-xl font-black tracking-widest text-white">SISTEMA FLOTA</h1>
+            <h1 class="text-xl font-black tracking-widest text-white uppercase">SISTEMA FLOTA</h1>
         </div>
 
         <div class="w-full md:w-1/3 flex justify-center mb-3 md:mb-0">
             <nav class="flex gap-2 bg-slate-800 p-1.5 rounded-lg shadow-inner">
-                <a href="Index.html" class="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-700 text-sm font-bold rounded flex items-center transition tracking-wider">
+                <a href="Index.html" class="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-700 text-sm font-bold rounded flex items-center tracking-wider transition duration-200">
                     SALIDAS
                 </a>
-                <a href="gestion-diagramas.html" class="px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded shadow-sm flex items-center pointer-events-none transition tracking-wider">
+                <a href="gestion-diagramas.html" class="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded shadow-md flex items-center tracking-wider pointer-events-none transition duration-200">
                     GESTIÓN
                 </a>
-                <a href="flota-activa.html" class="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-700 text-sm font-bold rounded flex items-center transition tracking-wider">
+                <a href="flota-activa.html" class="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-700 text-sm font-bold rounded flex items-center tracking-wider transition duration-200">
                     MONITOR
                 </a>
             </nav>
         </div>
 
         <div class="w-full md:w-1/3 flex justify-center md:justify-end items-center gap-3">
-            <button onclick="cargarDiagramasActivos()" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-sm font-bold transition tracking-wider uppercase">
+            <button onclick="cargarDiagramasActivos()" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-sm font-bold transition duration-200 tracking-wider uppercase cursor-pointer">
                 Refrescar
             </button>
-            <span id="status-indicator" class="text-sm font-bold bg-slate-800 px-3 py-1.5 rounded text-slate-300 border border-slate-700">Verificando...</span>
+            
+            <div class="relative">
+                <button onclick="toggleUserMenu()" id="btn-user" class="text-sm font-bold bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded text-slate-300 border border-slate-700 transition duration-200 flex items-center gap-2 outline-none cursor-pointer">
+                    <span id="status-indicator">Cargando...</span>
+                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div id="user-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded shadow-xl py-1 z-50">
+                    <button onclick="cerrarSesion()" class="w-full text-left px-4 py-2 text-sm text-rose-400 hover:bg-slate-700 hover:text-rose-300 font-bold transition duration-200 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        Cerrar Sesión
+                    </button>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -50,11 +62,11 @@
         let opcionesUnidades = '<option value="">Seleccione nueva unidad...</option>';
         let operadorActual = "";
 
-        // 1. BLINDAJE DE SEGURIDAD
+        // BLINDAJE DE SEGURIDAD
         async function verificarSesion() {
             const { data: { session } } = await db.auth.getSession();
             if (!session) {
-                window.location.href = 'login.html'; // Redirige si no está logueado
+                window.location.href = 'login.html';
             } else {
                 operadorActual = session.user.email;
                 document.getElementById('status-indicator').innerText = "👤 " + operadorActual;
@@ -162,7 +174,6 @@
 
         async function resolverTransito(jsonStr, diag_id) {
             const data = JSON.parse(decodeURIComponent(jsonStr));
-            
             const decisionChofer = document.getElementById(`sel-chofer-${diag_id}`).value;
             const decisionUnidad = document.getElementById(`sel-rotura-${diag_id}`).value;
             const nuevaUnidadId = document.getElementById(`sel-unidad-${diag_id}`).value;
@@ -171,7 +182,6 @@
                 return alert("Por favor, seleccione el tractor de reemplazo para el chofer.");
             }
 
-            // 2. AUDITORÍA: Estampamos el operador que resuelve el tránsito
             const nuevoEvento = {
                 evento: "Resolución de Tránsito",
                 accion_chofer: decisionChofer,
@@ -210,7 +220,6 @@
             if(!motivo) return;
             const data = JSON.parse(decodeURIComponent(jsonStr));
             
-            // 3. AUDITORÍA: Estampamos el operador que reporta la rotura
             const evts = [...data.evts, { 
                 evento: "Tránsito", 
                 motivo: motivo, 
@@ -242,7 +251,30 @@
             cargarDiagramasActivos();
         }
 
-        // En lugar de cargarDiagramasActivos(), primero verificamos la sesión
+        // ==========================================
+        // FUNCIONES DEL MENÚ DE USUARIO
+        // ==========================================
+        
+        function toggleUserMenu() {
+            document.getElementById('user-dropdown').classList.toggle('hidden');
+        }
+
+        async function cerrarSesion() {
+            await db.auth.signOut();
+            window.location.href = 'login.html';
+        }
+
+        // Cierra el menú si se hace clic afuera del botón o del desplegable
+        document.addEventListener('click', (event) => {
+            const btn = document.getElementById('btn-user');
+            const dropdown = document.getElementById('user-dropdown');
+            // Si el menú no está oculto y el clic fue fuera del botón y del menú...
+            if (btn && dropdown && !btn.contains(event.target) && !dropdown.contains(event.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        // Inicia el sistema
         verificarSesion();
     </script>
 </body>
