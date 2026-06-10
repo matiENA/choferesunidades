@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -270,3 +271,248 @@ document.addEventListener('click', (event) => {
     </script>
 </body>
 </html>
+=======
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Despacho | Iniciar Diagrama</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-200 h-screen flex flex-col font-sans overflow-hidden">
+    
+    <header class="bg-slate-900 text-white shadow-md z-20 flex flex-col md:flex-row items-center justify-between px-6 py-3 border-b-4 border-indigo-600">
+        <div class="w-full md:w-1/3 flex justify-center md:justify-start items-center mb-3 md:mb-0">
+            <h1 class="text-xl font-black tracking-widest text-white">SISTEMA FLOTA</h1>
+        </div>
+
+        <div class="w-full md:w-1/3 flex justify-center mb-3 md:mb-0">
+            <nav class="flex gap-2 bg-slate-800 p-1.5 rounded-lg shadow-inner">
+                <a href="Index.html" class="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded shadow-sm flex items-center pointer-events-none transition">
+                    SALIDAS
+                </a>
+                <a href="gestion-diagramas.html" class="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-700 text-sm font-bold rounded flex items-center transition">
+                    GESTIÓN
+                </a>
+                <a href="flota-activa.html" class="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-700 text-sm font-bold rounded flex items-center transition">
+                    MONITOR
+                </a>
+            </nav>
+        </div>
+
+        <div class="w-full md:w-1/3 flex justify-center md:justify-end items-center">
+            <span id="status-indicator" class="text-sm font-bold bg-slate-800 px-3 py-1.5 rounded text-slate-300 border border-slate-700">Conectado</span>
+        </div>
+    </header>
+
+    <div class="bg-slate-800 px-6 py-2 flex items-center gap-4 shadow-md z-10 border-b border-slate-700">
+        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Filtro Operativo:</span>
+        <select id="filtro-producto" onchange="aplicarFiltros()" class="bg-slate-700 text-white text-sm font-bold px-3 py-1.5 rounded border border-slate-600 outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+            <option value="TODOS">TODOS LOS PRODUCTOS</option>
+            </select>
+    </div>
+
+    <main class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 p-4 min-h-0">
+        
+        <section class="bg-white rounded-xl shadow flex flex-col border-t-4 border-slate-700 min-h-0 overflow-hidden">
+            <div class="p-4 border-b bg-slate-50 flex flex-col gap-3">
+                <h2 class="text-lg font-bold text-slate-800 uppercase tracking-wide">Unidades Disponibles</h2>
+                <input type="text" id="search-unidades" placeholder="Buscar por patente..." class="w-full p-2 border border-slate-300 rounded bg-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition shadow-sm" oninput="aplicarFiltros()">
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 space-y-4" id="contenedor-unidades"></div>
+        </section>
+
+        <section class="bg-white rounded-xl shadow flex flex-col border-t-4 border-slate-700 min-h-0 overflow-hidden">
+            <div class="p-4 border-b bg-slate-50 flex flex-col gap-3">
+                <h2 class="text-lg font-bold text-slate-800 uppercase tracking-wide">Personal Inactivo</h2>
+                <input type="text" id="search-choferes" placeholder="Buscar por apellido o nombre..." class="w-full p-2 border border-slate-300 rounded bg-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition shadow-sm" oninput="aplicarFiltros()">
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 space-y-4" id="contenedor-choferes"></div>
+        </section>
+
+    </main>
+
+    <footer class="bg-white border-t p-4 shadow z-10">
+        <div class="max-w-xl mx-auto">
+            <button onclick="registrarSalida()" id="btn-inicia" disabled class="w-full disabled:opacity-40 bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-xl shadow-md text-lg transition tracking-widest">
+                REGISTRAR NUEVA SALIDA A RUTA
+            </button>
+        </div>
+    </footer>
+
+    <script>
+        const db = supabase.createClient('https://laspqhmkrbmuxfgmnudf.supabase.co', 'sb_publishable_HowwuqG31WUNjO6vAjxZmQ_yRSzV-0d');
+        
+        // Estado global para mantener los datos en memoria y poder filtrar rápido
+        let state = { unidad: null, chofer: null };
+        let dataUnidades = [];
+        let dataChoferes = [];
+        let operadorActual = "";
+
+async function cargarDatos() {
+            // Descargamos todo
+            const { data: units } = await db.from('units').select('*').eq('estado', 'disponible');
+            const { data: chofs } = await db.from('choferes').select('*').eq('estado', 'inactivo');
+            
+            dataUnidades = units || [];
+            dataChoferes = chofs || [];
+
+            // Detectamos todos los productos únicos existentes
+            const productosSet = new Set();
+            dataUnidades.forEach(u => { if(u.producto) productosSet.add(u.producto.trim().toUpperCase()); });
+            
+            // ATENCIÓN AQUÍ: Cambiamos a c_producto para los choferes
+            dataChoferes.forEach(c => { if(c.c_producto) productosSet.add(c.c_producto.trim().toUpperCase()); });
+
+            const selectProducto = document.getElementById('filtro-producto');
+            productosSet.forEach(prod => {
+                selectProducto.innerHTML += `<option value="${prod}">${prod}</option>`;
+            });
+
+            // Disparamos el primer renderizado
+            aplicarFiltros();
+        }
+
+        // Esta función se activa cada vez que tipeás algo o cambiás el producto
+        function aplicarFiltros() {
+            const filtroProd = document.getElementById('filtro-producto').value;
+            const searchU = document.getElementById('search-unidades').value.toLowerCase();
+            const searchC = document.getElementById('search-choferes').value.toLowerCase();
+
+            // Filtramos Unidades (usa .producto)
+            const unidadesFiltradas = dataUnidades.filter(u => {
+                const prodUnidad = u.producto ? u.producto.trim().toUpperCase() : '';
+                const coincideProducto = (filtroProd === 'TODOS' || prodUnidad === filtroProd);
+                const coincideTexto = u.tractor.toLowerCase().includes(searchU);
+                return coincideProducto && coincideTexto;
+            });
+
+            // Filtramos Choferes (usa .c_producto)
+            const choferesFiltrados = dataChoferes.filter(c => {
+                const prodChofer = c.c_producto ? c.c_producto.trim().toUpperCase() : '';
+                const coincideProducto = (filtroProd === 'TODOS' || prodChofer === filtroProd);
+                const coincideTexto = c.nombre.toLowerCase().includes(searchC);
+                return coincideProducto && coincideTexto;
+            });
+
+            renderizarUnidades(unidadesFiltradas);
+            renderizarChoferes(choferesFiltrados);
+        }
+
+        function renderizarUnidades(lista) {
+            const contU = document.getElementById('contenedor-unidades');
+            contU.innerHTML = '';
+            
+            if (lista.length === 0) {
+                contU.innerHTML = '<p class="text-sm text-slate-400 text-center mt-4 font-bold">No hay unidades para los filtros seleccionados.</p>';
+                return;
+            }
+
+            lista.forEach(u => {
+                let estadoVencimiento = 'ok';
+                const hoy = new Date();
+                const limiteMes = new Date();
+                limiteMes.setMonth(hoy.getMonth() + 1); 
+                
+                const columnasFechas = ['vtv_tr', 'mas_tr', 'vtv_semi', 'mas_semi', 'esp_es', 'vi', 've'];
+                
+                for (let col of columnasFechas) {
+                    if (u[col]) {
+                        const fecha = new Date(u[col]);
+                        if (fecha < hoy) {
+                            estadoVencimiento = 'vencido';
+                            break; 
+                        } else if (fecha <= limiteMes) {
+                            estadoVencimiento = 'alerta'; 
+                        }
+                    }
+                }
+
+                let badgeVencimiento = '';
+                if (estadoVencimiento === 'vencido') {
+                    badgeVencimiento = '<span class="bg-red-100 text-red-700 border border-red-300 text-[10px] px-2 py-0.5 rounded font-black ml-2 shadow-sm tracking-wide uppercase">Vencida</span>';
+                } else if (estadoVencimiento === 'alerta') {
+                    badgeVencimiento = '<span class="bg-yellow-100 text-yellow-800 border border-yellow-300 text-[10px] px-2 py-0.5 rounded font-black ml-2 shadow-sm tracking-wide uppercase">Revisar</span>';
+                }
+
+                const badgeEstado = `<span class="text-[10px] font-bold uppercase bg-slate-100 border border-slate-200 px-2 py-1 rounded text-slate-500">${u.estado}</span>`;
+                
+                // Mantenemos la selección visual si el usuario ya lo había clickeado
+                const estiloSeleccion = state.unidad === u.id ? 'border-indigo-600 bg-indigo-50 ring-2 ring-indigo-200' : 'border-slate-200 bg-white';
+
+                contU.innerHTML += `
+                <div id="u-${u.id}" onclick="seleccionar('unidad', '${u.id}')" class="tarjeta-unidad cursor-pointer border-2 ${estiloSeleccion} p-3 rounded-lg flex justify-between items-center transition hover:border-indigo-400 group">
+                    <div class="flex items-center">
+                        <span class="font-bold text-slate-700 text-lg group-hover:text-indigo-700">${u.tractor}</span>
+                        ${badgeVencimiento}
+                    </div>
+                    ${badgeEstado}
+                </div>`;
+            });
+        }
+
+        function renderizarChoferes(lista) {
+            const contC = document.getElementById('contenedor-choferes');
+            contC.innerHTML = '';
+
+            if (lista.length === 0) {
+                contC.innerHTML = '<p class="text-sm text-slate-400 text-center mt-4 font-bold">No hay personal para los filtros seleccionados.</p>';
+                return;
+            }
+
+            lista.forEach(c => {
+                const badgeEstadoChofer = `<span class="text-[10px] font-bold uppercase bg-slate-100 border border-slate-200 px-2 py-1 rounded text-slate-500">${c.estado}</span>`;
+                
+                // Mantenemos la selección visual
+                const estiloSeleccion = state.chofer === c.id ? 'border-indigo-600 bg-indigo-50 ring-2 ring-indigo-200' : 'border-slate-200 bg-white';
+
+                contC.innerHTML += `
+                <div id="c-${c.id}" onclick="seleccionar('chofer', '${c.id}')" class="tarjeta-chofer cursor-pointer border-2 ${estiloSeleccion} p-3 rounded-lg flex justify-between items-center transition hover:border-indigo-400 group">
+                    <span class="font-bold text-slate-700 text-lg group-hover:text-indigo-700">${c.nombre}</span>
+                    ${badgeEstadoChofer}
+                </div>`;
+            });
+        }
+
+        function seleccionar(tipo, id) {
+            state[tipo] = id;
+            // Al hacer clic, simplemente forzamos un re-renderizado para que se pinten los bordes
+            aplicarFiltros(); 
+            document.getElementById('btn-inicia').disabled = !(state.unidad && state.chofer);
+        }
+
+        async function verificarSesion() {
+            const { data: { session } } = await db.auth.getSession();
+            if (!session) {
+                window.location.href = 'login.html'; // Lo patea al login si no tiene sesión
+            } else {
+                operadorActual = session.user.email;
+                document.getElementById('status-indicator').innerText = "👤 " + operadorActual;
+                cargarDatos(); // Solo carga los datos si está logueado
+            }
+        }
+        
+        async function registrarSalida() {
+            document.getElementById('btn-inicia').innerText = "GUARDANDO...";
+            await db.from('movimientos').insert([{ 
+                tipo_operacion: 'inicia_diagrama', 
+                id_unidad: state.unidad, 
+                id_chofer: state.chofer,
+                operador: operadorActual // <--- Estampa quién abrió el viaje
+            }]);
+            location.reload(); 
+        }  
+        
+        verificarSesion();
+    </script>
+</body>
+</html>
+>>>>>>> d845e80af581d518271de259f00512fb36db9544
