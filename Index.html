@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Despacho | Iniciar Diagrama</title>
+    <title>Iniciar Diagrama</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -23,7 +23,7 @@
         <div class="w-full md:w-1/3 flex justify-center mb-3 md:mb-0">
             <nav class="flex gap-2 bg-slate-800 p-1.5 rounded-lg shadow-inner">
                 <a href="Index.html" class="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded shadow-sm flex items-center pointer-events-none transition">
-                    SALIDAS
+                    INICIA   
                 </a>
                 <a href="gestion-diagramas.html" class="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-700 text-sm font-bold rounded flex items-center transition">
                     GESTIÓN
@@ -34,9 +34,24 @@
             </nav>
         </div>
 
-        <div class="w-full md:w-1/3 flex justify-center md:justify-end items-center">
-            <span id="status-indicator" class="text-sm font-bold bg-slate-800 px-3 py-1.5 rounded text-slate-300 border border-slate-700">Conectado</span>
+        <div class="w-full md:w-1/3 flex justify-center md:justify-end items-center gap-3">
+            <button onclick="cargarDiagramasActivos()" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-sm font-bold transition tracking-wider uppercase">
+                Refrescar
+            </button>
+            <div class="relative">
+                <button onclick="toggleUserMenu()" id="btn-user" class="text-sm font-bold bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded text-slate-300 border border-slate-700 transition duration-200 flex items-center gap-2 outline-none cursor-pointer">
+                    <span id="status-indicator">Verificando...</span>
+                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div id="user-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded shadow-xl py-1 z-50">
+                    <button onclick="cerrarSesion()" class="w-full text-left px-4 py-2 text-sm text-rose-400 hover:bg-slate-700 hover:text-rose-300 font-bold transition duration-200 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        Cerrar Sesión
+                    </button>
+                </div>
+            </div>
         </div>
+
     </header>
 
     <div class="bg-slate-800 px-6 py-2 flex items-center gap-4 shadow-md z-10 border-b border-slate-700">
@@ -236,7 +251,104 @@ async function cargarDatos() {
             }]);
             location.reload(); 
         }  
-        
+       
+        async function cargarDiagramasActivos() {
+            const { data: libres } = await db.from('units').select('id, tractor').eq('estado', 'disponible');
+            opcionesUnidades = '<option value="">Seleccione nueva unidad...</option>';
+            libres?.forEach(u => opcionesUnidades += `<option value="${u.id}">${u.tractor}</option>`);
+
+            const { data: diagramas } = await db.from('movimientos')
+                .select('id, fecha_inicio, eventos_intermedios, id_chofer, id_unidad, units(tractor, estado), choferes(nombre, estado)')
+                .eq('estado_diagrama', 'abierto')
+                .order('fecha_inicio', { ascending: false });
+
+            const cont = document.getElementById('contenedor-diagramas');
+            cont.innerHTML = '';
+
+            diagramas?.forEach(diag => {
+                const eventos = diag.eventos_intermedios || [];
+                const estaEnTransito = eventos.length > 0 && eventos[eventos.length - 1].evento === 'Tránsito';
+                
+                const jsonStr = encodeURIComponent(JSON.stringify({ 
+                    id: diag.id, 
+                    id_unidad_vieja: diag.id_unidad,
+                    id_chofer: diag.id_chofer,
+                    evts: eventos 
+                }));
+
+                let botonesHTML = '';
+                
+                if (estaEnTransito) {
+                    botonesHTML = `
+                        <div class="w-full bg-orange-50 p-4 border border-orange-200 rounded-lg mt-4 relative">
+                            <button onclick="deshacerTransito('${jsonStr}')" class="absolute top-3 right-3 text-orange-400 hover:text-red-600 transition" title="Deshacer reporte por error">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+
+                            <h4 class="text-orange-800 font-bold mb-3 tracking-wide uppercase text-sm pr-8">Unidad en Taller / Esperando</h4>
+                            <div class="flex flex-col md:flex-row gap-4">
+                                <div class="flex-1">
+                                    <label class="text-xs font-bold text-slate-500 uppercase">¿Qué hace el Chofer?</label>
+                                    <select id="sel-chofer-${diag.id}" class="w-full mt-1 p-2 border rounded outline-none focus:ring-2 focus:ring-orange-400 text-sm font-medium text-slate-700 shadow-sm" onchange="toggleNuevaUnidad('${diag.id}')">
+                                        <option value="espera">Espera unidad</option>
+                                        <option value="nueva_unidad">Cambia a Nueva Unidad</option>
+                                    </select>
+                                    <select id="sel-unidad-${diag.id}" class="w-full mt-2 p-2 border rounded hidden bg-blue-50 border-blue-300 outline-none focus:ring-2 focus:ring-blue-400 text-sm font-medium text-slate-700 shadow-sm">
+                                        ${opcionesUnidades}
+                                    </select>
+                                </div>
+                                <div class="flex-1">
+                                    <label class="text-xs font-bold text-slate-500 uppercase">¿Estado de Unidad Rota?</label>
+                                    <select id="sel-rotura-${diag.id}" class="w-full mt-1 p-2 border rounded outline-none focus:ring-2 focus:ring-orange-400 text-sm font-medium text-slate-700 shadow-sm">
+                                        <option value="alta">Alta Rápida (Vuelve a Circulando)</option>
+                                        <option value="prolongada">Reparación Prolongada (Queda en Base)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex justify-end mt-4">
+                                <button onclick="resolverTransito('${jsonStr}', '${diag.id}')" class="w-full md:w-auto bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded shadow transition uppercase tracking-widest text-sm">
+                                    Aplicar Resolución
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    botonesHTML = `
+                        <div class="flex gap-2 w-full md:w-auto flex-wrap justify-end mt-4 md:mt-0 ml-auto">
+                            <button onclick="marcarTransito('${jsonStr}')" class="bg-orange-100 hover:bg-orange-200 text-orange-800 font-bold py-2 px-4 rounded border border-orange-300 transition uppercase tracking-wide text-xs shadow-sm">Reportar Tránsito</button>
+                            <button onclick="terminar('${diag.id}')" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-4 rounded shadow transition uppercase tracking-wide text-xs">Terminar Diagrama</button>
+                        </div>
+                    `;
+                }
+
+                const bordeColor = estaEnTransito ? 'border-orange-500' : 'border-emerald-500';
+
+                cont.innerHTML += `
+                    <div class="bg-white rounded-xl shadow p-5 mb-4 border-l-4 ${bordeColor} flex flex-col w-full group">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center w-full">
+                            <div class="flex-1">
+                                <h3 class="text-2xl font-black text-slate-800 tracking-wide">${diag.units?.tractor}</h3>
+                                <p class="font-bold text-slate-500 uppercase text-xs mt-1 tracking-wider">CHOFER: <span class="text-slate-700">${diag.choferes?.nombre}</span></p>
+                                <p class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Inicio: ${new Date(diag.fecha_inicio).toLocaleString()}</p>
+                            </div>
+                            ${!estaEnTransito ? botonesHTML : ''}
+                        </div>
+                        ${estaEnTransito ? botonesHTML : ''}
+                    </div>
+                `;
+            });
+        }
+
+        function toggleUserMenu() {
+            document.getElementById('user-dropdown').classList.toggle('hidden');
+        }
+
+        async function cerrarSesion() {
+            await db.auth.signOut();
+            window.location.href = 'login.html';
+        }
+
+
         verificarSesion();
     </script>
 </body>
