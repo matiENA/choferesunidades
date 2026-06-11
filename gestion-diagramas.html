@@ -14,59 +14,60 @@
 </head>
 <body class="bg-slate-200 min-h-screen flex flex-col font-sans">
     
-    <header class="bg-slate-900 text-white shadow-md z-20 flex flex-col md:flex-row items-center justify-between px-6 py-3 border-b-4 border-indigo-600">
+    <header class="bg-slate-900 text-white shadow-md z-20 flex flex-col md:flex-row items-center justify-between px-6 py-3 border-b-4 border-emerald-500 font-sans">
         <div class="w-full md:w-1/3 flex justify-center md:justify-start items-center mb-3 md:mb-0">
             <h1 class="text-xl font-black tracking-widest text-white uppercase">SISTEMA FLOTA</h1>
         </div>
-
         <div class="w-full md:w-1/3 flex justify-center mb-3 md:mb-0">
             <nav class="flex gap-2 bg-slate-800 p-1.5 rounded-lg shadow-inner">
-                <a href="Index.html" class="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-700 text-sm font-bold rounded flex items-center transition tracking-wider">
-                    INICIA
-                </a>
-                <a href="gestion-diagramas.html" class="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded shadow-sm flex items-center pointer-events-none transition tracking-wider">
-                    GESTIÓN
-                </a>
-                <a href="flota-activa.html" class="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-700 text-sm font-bold rounded flex items-center transition tracking-wider">
-                    MONITOR
-                </a>
+                <a href="Index.html" class="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-700 text-sm font-bold rounded flex items-center tracking-wider transition duration-200">INICIA</a>
+                <a href="gestion-diagramas.html" class="px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded shadow-md flex items-center tracking-wider pointer-events-none transition duration-200">GESTIÓN</a>
+                <a href="taller.html" class="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-700 text-sm font-bold rounded flex items-center tracking-wider transition duration-200">TALLER</a>
             </nav>
         </div>
-
         <div class="w-full md:w-1/3 flex justify-center md:justify-end items-center gap-3">
-            <button onclick="cargarDiagramasActivos()" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-sm font-bold transition tracking-wider uppercase">
-                Refrescar
-            </button>
+            <button onclick="cargarDiagramasActivos()" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-sm font-bold transition duration-200 tracking-wider uppercase cursor-pointer">Refrescar</button>
             <div class="relative">
                 <button onclick="toggleUserMenu()" id="btn-user" class="text-sm font-bold bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded text-slate-300 border border-slate-700 transition duration-200 flex items-center gap-2 outline-none cursor-pointer">
                     <span id="status-indicator">Verificando...</span>
-                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </button>
                 <div id="user-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded shadow-xl py-1 z-50">
-                    <button onclick="cerrarSesion()" class="w-full text-left px-4 py-2 text-sm text-rose-400 hover:bg-slate-700 hover:text-rose-300 font-bold transition duration-200 flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                        Cerrar Sesión
-                    </button>
+                    <button onclick="cerrarSesion()" class="w-full text-left px-4 py-2 text-sm text-rose-400 hover:bg-slate-700 hover:text-rose-300 font-bold transition duration-200 flex items-center gap-2">Cerrar Sesión</button>
                 </div>
             </div>
         </div>
     </header>
 
     <main class="flex-1 p-6 overflow-y-auto">
-        <div class="max-w-5xl mx-auto" id="contenedor-diagramas"></div>
+        <div class="max-w-6xl mx-auto space-y-10">
+            
+            <section>
+                <h2 class="text-sm font-black text-rose-700 mb-3 uppercase tracking-widest border-b-2 border-rose-200 pb-1">Falta Unidad / Reemplazo</h2>
+                <div id="contenedor-falta" class="flex flex-col gap-3"></div>
+            </section>
+
+            <section>
+                <h2 class="text-sm font-black text-orange-700 mb-3 uppercase tracking-widest border-b-2 border-orange-200 pb-1">Enviadas a Tránsito</h2>
+                <div id="contenedor-transito" class="flex flex-col gap-3"></div>
+            </section>
+
+            <section>
+                <h2 class="text-sm font-black text-blue-700 mb-3 uppercase tracking-widest border-b-2 border-blue-200 pb-1">En Circulación</h2>
+                <div id="contenedor-circulando" class="flex flex-col gap-3"></div>
+            </section>
+
+        </div>
     </main>
 
     <div id="modal-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
-        <div id="modal-box" class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 transform scale-95 transition-transform duration-300 border-t-4">
+        <div id="modal-box" class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 transform scale-95 transition-transform duration-300 border-t-4">
             <h3 id="modal-title" class="text-xl font-black text-slate-800 tracking-wide mb-2 uppercase"></h3>
-            <p id="modal-message" class="text-sm font-bold text-slate-500 mb-5"></p>
-
-            <div id="modal-input-container" class="hidden mb-4">
-                <input type="text" id="modal-input" class="w-full p-3 border border-slate-300 rounded bg-slate-50 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition shadow-sm font-medium text-slate-700" placeholder="Escriba aquí...">
+            <p id="modal-message" class="text-sm font-bold text-slate-500 mb-4"></p>
+            <div id="modal-input-container" class="hidden mb-6">
+                <input type="text" id="modal-input" class="w-full p-3 border border-slate-300 rounded bg-slate-50 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition shadow-sm font-medium text-slate-700">
             </div>
-
-            <div class="flex justify-end gap-3 mt-2">
-                <button id="modal-btn-cancel" class="hidden px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded transition tracking-wider text-sm uppercase">Cancelar</button>
+            <div class="flex justify-end gap-3">
+                <button id="modal-btn-cancel" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded transition tracking-wider text-sm uppercase">Cancelar</button>
                 <button id="modal-btn-confirm" class="px-6 py-2 text-white font-bold rounded shadow transition tracking-wider text-sm uppercase">Confirmar</button>
             </div>
         </div>
@@ -74,99 +75,60 @@
 
     <script>
         const db = supabase.createClient('https://laspqhmkrbmuxfgmnudf.supabase.co', 'sb_publishable_HowwuqG31WUNjO6vAjxZmQ_yRSzV-0d');
-        let opcionesUnidades = '<option value="">Seleccione nueva unidad...</option>';
         let operadorActual = "";
 
-        // MOTOR DE MODALES PERSONALIZADOS
-        function showModal({ title, message, type = 'alert', color = 'indigo', inputPlaceholder = '' }) {
+        function showModal({ title, message, type = 'confirm', color = 'indigo', inputPlaceholder = '' }) {
             return new Promise((resolve) => {
                 const overlay = document.getElementById('modal-overlay');
                 const box = document.getElementById('modal-box');
-                const titleEl = document.getElementById('modal-title');
-                const msgEl = document.getElementById('modal-message');
-                const inputCont = document.getElementById('modal-input-container');
-                const inputEl = document.getElementById('modal-input');
                 const btnCancel = document.getElementById('modal-btn-cancel');
                 const btnConfirm = document.getElementById('modal-btn-confirm');
+                const inputCont = document.getElementById('modal-input-container');
+                const inputEl = document.getElementById('modal-input');
 
-                // Setear textos
-                titleEl.innerText = title;
-                msgEl.innerText = message;
+                document.getElementById('modal-title').innerText = title;
+                document.getElementById('modal-message').innerText = message;
 
-                // Limpiar estilos anteriores
                 box.classList.remove('border-rose-500', 'border-orange-500', 'border-indigo-500');
                 btnConfirm.classList.remove('bg-rose-600', 'hover:bg-rose-700', 'bg-orange-600', 'hover:bg-orange-700', 'bg-indigo-600', 'hover:bg-indigo-700');
-
-                // Aplicar paleta de color
-                if (color === 'rose') {
-                    box.classList.add('border-rose-500');
-                    btnConfirm.classList.add('bg-rose-600', 'hover:bg-rose-700');
-                } else if (color === 'orange') {
-                    box.classList.add('border-orange-500');
-                    btnConfirm.classList.add('bg-orange-600', 'hover:bg-orange-700');
-                } else {
-                    box.classList.add('border-indigo-500');
-                    btnConfirm.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
-                }
-
-                // Configurar tipo de modal
-                btnCancel.classList.add('hidden');
                 inputCont.classList.add('hidden');
                 inputEl.value = '';
-                inputEl.classList.remove('border-rose-500', 'ring-2', 'ring-rose-200');
 
-                if (type === 'confirm' || type === 'prompt') {
-                    btnCancel.classList.remove('hidden');
-                }
-                
-                if (type === 'prompt') {
-                    inputCont.classList.remove('hidden');
-                    inputEl.placeholder = inputPlaceholder;
-                }
+                if (color === 'rose') { box.classList.add('border-rose-500'); btnConfirm.classList.add('bg-rose-600', 'hover:bg-rose-700'); } 
+                else if (color === 'orange') { box.classList.add('border-orange-500'); btnConfirm.classList.add('bg-orange-600', 'hover:bg-orange-700'); } 
+                else { box.classList.add('border-indigo-500'); btnConfirm.classList.add('bg-indigo-600', 'hover:bg-indigo-700'); }
 
-                // Mostrar con animación
+                if (type === 'alert') btnCancel.classList.add('hidden');
+                else btnCancel.classList.remove('hidden');
+
+                if (type === 'prompt') { inputCont.classList.remove('hidden'); inputEl.placeholder = inputPlaceholder; }
+
                 overlay.classList.remove('hidden');
-                setTimeout(() => {
-                    overlay.classList.remove('opacity-0');
-                    box.classList.replace('scale-95', 'scale-100');
-                    if (type === 'prompt') inputEl.focus();
+                setTimeout(() => { 
+                    overlay.classList.remove('opacity-0'); 
+                    box.classList.replace('scale-95', 'scale-100'); 
+                    if(type === 'prompt') inputEl.focus();
                 }, 10);
 
-                // Función de cierre
                 const closeModal = (result) => {
-                    overlay.classList.add('opacity-0');
-                    box.classList.replace('scale-100', 'scale-95');
-                    setTimeout(() => {
-                        overlay.classList.add('hidden');
-                        btnConfirm.onclick = null;
-                        btnCancel.onclick = null;
-                        resolve(result);
-                    }, 300);
+                    overlay.classList.add('opacity-0'); box.classList.replace('scale-100', 'scale-95');
+                    setTimeout(() => { overlay.classList.add('hidden'); resolve(result); }, 300);
                 };
 
-                // Eventos de botones
                 btnConfirm.onclick = () => {
                     if (type === 'prompt') {
-                        if (!inputEl.value.trim()) {
-                            inputEl.classList.add('border-rose-500', 'ring-2', 'ring-rose-200');
-                            return;
-                        }
+                        if (!inputEl.value.trim()) return inputEl.classList.add('border-rose-500', 'ring-2', 'ring-rose-200');
                         closeModal(inputEl.value.trim());
-                    } else {
-                        closeModal(true);
-                    }
+                    } else closeModal(true);
                 };
-
                 btnCancel.onclick = () => closeModal(false);
             });
         }
 
-        // SEGURIDAD
         async function verificarSesion() {
             const { data: { session } } = await db.auth.getSession();
-            if (!session) {
-                window.location.href = 'login.html';
-            } else {
+            if (!session) window.location.href = 'login.html';
+            else {
                 operadorActual = session.user.email;
                 document.getElementById('status-indicator').innerText = operadorActual;
                 cargarDiagramasActivos();
@@ -175,228 +137,158 @@
 
         async function cargarDiagramasActivos() {
             const { data: libres } = await db.from('units').select('id, tractor').eq('estado', 'disponible');
-            opcionesUnidades = '<option value="">Seleccione nueva unidad...</option>';
-            libres?.forEach(u => opcionesUnidades += `<option value="${u.id}">${u.tractor}</option>`);
+            let opcionesReemplazo = '<option value="">Seleccionar reemplazo...</option>';
+            libres?.forEach(u => opcionesReemplazo += `<option value="${u.id}">${u.tractor}</option>`);
 
-            const { data: diagramas } = await db.from('movimientos')
-                .select('id, fecha_inicio, eventos_intermedios, id_chofer, id_unidad, units(tractor, estado), choferes(nombre, estado)')
+            const { data: activos } = await db.from('movimientos')
+                .select('id, fecha_inicio, eventos_intermedios, id_chofer, id_unidad, units(tractor, estado), choferes(nombre)')
                 .eq('estado_diagrama', 'abierto')
                 .order('fecha_inicio', { ascending: false });
 
-            const cont = document.getElementById('contenedor-diagramas');
-            cont.innerHTML = '';
+            let htmlFalta = '';
+            let htmlTransito = '';
+            let htmlCirculando = '';
 
-            diagramas?.forEach(diag => {
-                const eventos = diag.eventos_intermedios || [];
-                const estaEnTransito = eventos.length > 0 && eventos[eventos.length - 1].evento === 'Tránsito';
-                
+            activos?.forEach(mov => {
+                const estado = mov.units?.estado;
                 const jsonStr = encodeURIComponent(JSON.stringify({ 
-                    id: diag.id, 
-                    id_unidad_vieja: diag.id_unidad,
-                    id_chofer: diag.id_chofer,
-                    evts: eventos 
+                    id: mov.id, id_unidad_vieja: mov.id_unidad, id_chofer: mov.id_chofer, evts: mov.eventos_intermedios || [] 
                 }));
 
-                let botonesHTML = '';
-                
-                if (estaEnTransito) {
-                    botonesHTML = `
-                        <div class="w-full bg-orange-50 p-4 border border-orange-200 rounded-lg mt-4 relative">
-                            <button onclick="deshacerTransito('${jsonStr}')" class="absolute top-3 right-3 text-orange-400 hover:text-red-600 transition" title="Deshacer reporte por error">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            </button>
-
-                            <h4 class="text-orange-800 font-bold mb-3 tracking-wide uppercase text-sm pr-8">Unidad en Taller / Esperando</h4>
-                            <div class="flex flex-col md:flex-row gap-4">
-                                <div class="flex-1">
-                                    <label class="text-xs font-bold text-slate-500 uppercase">¿Qué hace el Chofer?</label>
-                                    <select id="sel-chofer-${diag.id}" class="w-full mt-1 p-2 border rounded outline-none focus:ring-2 focus:ring-orange-400 text-sm font-medium text-slate-700 shadow-sm" onchange="toggleNuevaUnidad('${diag.id}')">
-                                        <option value="espera">Espera unidad</option>
-                                        <option value="nueva_unidad">Cambia a Nueva Unidad</option>
-                                    </select>
-                                    <select id="sel-unidad-${diag.id}" class="w-full mt-2 p-2 border rounded hidden bg-blue-50 border-blue-300 outline-none focus:ring-2 focus:ring-blue-400 text-sm font-medium text-slate-700 shadow-sm">
-                                        ${opcionesUnidades}
-                                    </select>
-                                </div>
-                                <div class="flex-1">
-                                    <label class="text-xs font-bold text-slate-500 uppercase">¿Estado de Unidad Rota?</label>
-                                    <select id="sel-rotura-${diag.id}" class="w-full mt-1 p-2 border rounded outline-none focus:ring-2 focus:ring-orange-400 text-sm font-medium text-slate-700 shadow-sm">
-                                        <option value="alta">Alta Rápida (Vuelve a Circulando)</option>
-                                        <option value="prolongada">Reparación Prolongada (Queda en Base)</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="flex justify-end mt-4">
-                                <button onclick="resolverTransito('${jsonStr}', '${diag.id}')" class="w-full md:w-auto bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded shadow transition uppercase tracking-widest text-sm">
-                                    Aplicar Resolución
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    botonesHTML = `
-                        <div class="flex gap-2 w-full md:w-auto flex-wrap justify-end mt-4 md:mt-0 ml-auto">
-                            <button onclick="marcarTransito('${jsonStr}')" class="bg-orange-100 hover:bg-orange-200 text-orange-800 font-bold py-2 px-4 rounded border border-orange-300 transition uppercase tracking-wide text-xs shadow-sm">Reportar Tránsito</button>
-                            <button onclick="terminar('${diag.id}')" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-4 rounded shadow transition uppercase tracking-wide text-xs">Terminar Diagrama</button>
-                        </div>
-                    `;
-                }
-
-                const bordeColor = estaEnTransito ? 'border-orange-500' : 'border-emerald-500';
-
-                cont.innerHTML += `
-                    <div class="bg-white rounded-xl shadow p-5 mb-4 border-l-4 ${bordeColor} flex flex-col w-full group">
-                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center w-full">
-                            <div class="flex-1">
-                                <h3 class="text-2xl font-black text-slate-800 tracking-wide">${diag.units?.tractor}</h3>
-                                <p class="font-bold text-slate-500 uppercase text-xs mt-1 tracking-wider">CHOFER: <span class="text-slate-700">${diag.choferes?.nombre}</span></p>
-                                <p class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Inicio: ${new Date(diag.fecha_inicio).toLocaleString()}</p>
-                            </div>
-                            ${!estaEnTransito ? botonesHTML : ''}
-                        </div>
-                        ${estaEnTransito ? botonesHTML : ''}
+                // DISEÑO BASE DE CARD HORIZONTAL
+                let cardBase = `
+                    <div class="flex items-center gap-4 mb-1">
+                        <h3 class="text-xl font-black text-slate-800 uppercase">${mov.units?.tractor}</h3>
+                        <span class="text-sm font-bold text-slate-600 uppercase">${mov.choferes?.nombre}</span>
                     </div>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-widest">Inicio: ${new Date(mov.fecha_inicio).toLocaleString()}</p>
                 `;
-            });
-        }
 
-        function toggleNuevaUnidad(id) {
-            const selectChofer = document.getElementById(`sel-chofer-${id}`).value;
-            const selectUnidad = document.getElementById(`sel-unidad-${id}`);
-            if (selectChofer === 'nueva_unidad') {
-                selectUnidad.classList.remove('hidden');
-            } else {
-                selectUnidad.classList.add('hidden');
-                selectUnidad.value = "";
-            }
-        }
-
-        async function resolverTransito(jsonStr, diag_id) {
-            const data = JSON.parse(decodeURIComponent(jsonStr));
-            const decisionChofer = document.getElementById(`sel-chofer-${diag_id}`).value;
-            const decisionUnidad = document.getElementById(`sel-rotura-${diag_id}`).value;
-            const nuevaUnidadId = document.getElementById(`sel-unidad-${diag_id}`).value;
-
-            if (decisionChofer === 'nueva_unidad' && !nuevaUnidadId) {
-                return await showModal({ 
-                    title: 'Atención Requerida', 
-                    message: 'Por favor, seleccione el tractor de reemplazo para el chofer.', 
-                    type: 'alert', 
-                    color: 'orange' 
-                });
-            }
-
-            const nuevoEvento = {
-                evento: "Resolución de Tránsito",
-                accion_chofer: decisionChofer,
-                accion_unidad: decisionUnidad,
-                operador: operadorActual,
-                fecha: new Date().toISOString()
-            };
-            const evts = [...data.evts, nuevoEvento];
-
-            if (decisionChofer === 'nueva_unidad') {
-                if (decisionUnidad === 'prolongada') {
-                    await db.from('units').update({ estado: 'reparacion' }).eq('id', data.id_unidad_vieja);
-                } else {
-                    await db.from('units').update({ estado: 'disponible' }).eq('id', data.id_unidad_vieja);
+                if (estado === 'circulando') {
+                    htmlCirculando += `
+                        <div class="bg-white border border-slate-200 rounded p-4 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-l-4 border-blue-500">
+                            <div class="flex-1">${cardBase}</div>
+                            <div class="flex gap-2 w-full md:w-auto shrink-0">
+                                <button onclick="marcarTransito('${jsonStr}')" class="flex-1 md:flex-none bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold py-2 px-4 rounded border border-orange-200 transition text-[10px] uppercase tracking-wide">Reportar Tránsito</button>
+                                <button onclick="terminar('${mov.id}')" class="flex-1 md:flex-none bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-4 rounded shadow transition text-[10px] uppercase tracking-wide">Terminar</button>
+                            </div>
+                        </div>`;
+                } 
+                else if (estado === 'reparacion en transito') {
+                    htmlTransito += `
+                        <div class="bg-white border border-slate-200 rounded p-4 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-l-4 border-orange-500">
+                            <div class="flex-1">${cardBase}</div>
+                            <div class="flex w-full md:w-auto shrink-0 justify-end">
+                                <button onclick="deshacerTransito('${jsonStr}')" class="text-orange-500 hover:text-orange-700 text-xs font-bold transition uppercase">Deshacer Envío</button>
+                            </div>
+                        </div>`;
+                } 
+                else if (estado === 'reparacion') {
+                    htmlFalta += `
+                        <div class="bg-white border border-slate-200 rounded p-4 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-l-4 border-rose-500">
+                            <div class="flex-1">${cardBase}</div>
+                            <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto shrink-0 items-stretch sm:items-center">
+                                <select id="reemplazo-${mov.id}" class="p-2 border border-slate-300 rounded text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-400 w-full sm:w-48">
+                                    ${opcionesReemplazo}
+                                </select>
+                                <button onclick="asignarReemplazo('${jsonStr}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded shadow transition text-[10px] uppercase tracking-wide">Asignar Unidad</button>
+                            </div>
+                        </div>`;
                 }
-                await db.from('movimientos').update({ id_unidad: nuevaUnidadId, eventos_intermedios: evts }).eq('id', data.id);
-            } 
-            else {
-                await db.from('units').update({ estado: 'circulando' }).eq('id', data.id_unidad_vieja);
-                await db.from('choferes').update({ estado: 'activo' }).eq('id', data.id_chofer);
-                await db.from('movimientos').update({ eventos_intermedios: evts }).eq('id', data.id);
-            }
+            });
 
+            // Si las secciones están vacías, mostrar mensaje sutil
+            document.getElementById('contenedor-falta').innerHTML = htmlFalta || '<p class="text-xs font-bold text-slate-400">Sin registros.</p>';
+            document.getElementById('contenedor-transito').innerHTML = htmlTransito || '<p class="text-xs font-bold text-slate-400">Sin registros.</p>';
+            document.getElementById('contenedor-circulando').innerHTML = htmlCirculando || '<p class="text-xs font-bold text-slate-400">Sin registros.</p>';
+        }
+
+        async function asignarReemplazo(jsonStr) {
+            const data = JSON.parse(decodeURIComponent(jsonStr));
+            const nuevaUnidadId = document.getElementById(`reemplazo-${data.id}`).value;
+            
+            if(!nuevaUnidadId) return showModal({title: 'Asignación requerida', message: 'Debe seleccionar un tractor de reemplazo.', type: 'alert', color: 'rose'});
+
+            const evts = [...data.evts, { evento: "Reasignación", operador: operadorActual, fecha: new Date().toISOString() }];
+
+            await db.from('units').update({ estado: 'circulando', fecha_cambio_estado: new Date().toISOString() }).eq('id', nuevaUnidadId);
+            await db.from('movimientos').update({ id_unidad: nuevaUnidadId, eventos_intermedios: evts }).eq('id', data.id);
             cargarDiagramasActivos();
         }
 
         async function terminar(id_mov) {
-            const confirmed = await showModal({
-                title: 'Terminar Diagrama',
-                message: '¿Está seguro de cerrar este diagrama y liberar al chofer y la unidad?',
-                type: 'confirm',
-                color: 'rose'
-            });
-            
+            const confirmed = await showModal({ title: 'Terminar Diagrama', message: '¿Confirmar cierre del diagrama operativo?', color: 'rose' });
             if(!confirmed) return;
-            
-            const { error } = await db.from('movimientos').update({ fecha_fin: new Date().toISOString(), estado_diagrama: 'cerrado' }).eq('id', id_mov).select();
-            if (error) await showModal({ title: 'Error del Sistema', message: error.message, type: 'alert', color: 'rose' });
-            
+            await db.from('movimientos').update({ fecha_fin: new Date().toISOString(), estado_diagrama: 'cerrado' }).eq('id', id_mov);
             cargarDiagramasActivos();
         }
 
         async function marcarTransito(jsonStr) {
-            const motivo = await showModal({
-                title: 'Reportar Tránsito',
-                message: 'Especifique el motivo de la rotura, contingencia o ingreso a taller:',
-                type: 'prompt',
-                color: 'orange',
-                inputPlaceholder: 'Ej: Falla en motor, control rutinario...'
-            });
-
-            if(!motivo) return; // Canceló o cerró el modal
+            const motivo = await showModal({ title: 'Enviar a Tránsito', message: 'Especifique la contingencia.', type: 'prompt', color: 'orange', inputPlaceholder: 'Motivo de tránsito' });
+            if(!motivo) return; 
             
             const data = JSON.parse(decodeURIComponent(jsonStr));
-            const evts = [...data.evts, { 
-                evento: "Tránsito", 
-                motivo: motivo, 
-                operador: operadorActual,
-                fecha: new Date().toISOString() 
-            }];
+            const evts = [...data.evts, { evento: "Tránsito", motivo: motivo, operador: operadorActual, fecha: new Date().toISOString() }];
             
-            const { error } = await db.from('movimientos').update({ eventos_intermedios: evts }).eq('id', data.id).select();
-            if (error) await showModal({ title: 'Error del Sistema', message: error.message, type: 'alert', color: 'rose' });
-            
+            await db.from('movimientos').update({ eventos_intermedios: evts }).eq('id', data.id);
+            await db.from('units').update({ estado: 'reparacion en transito', fecha_cambio_estado: new Date().toISOString() }).eq('id', data.id_unidad_vieja);
             cargarDiagramasActivos();
         }
 
         async function deshacerTransito(jsonStr) {
-            const confirmed = await showModal({
-                title: 'Deshacer Reporte',
-                message: '¿Anular el reporte de tránsito? La unidad y el chofer volverán a estar activos en ruta inmediatamente.',
-                type: 'confirm',
-                color: 'orange'
-            });
-
+            const confirmed = await showModal({ title: 'Anular Envío', message: 'La unidad regresará a estado circulante.', color: 'orange' });
             if(!confirmed) return;
-            
+
             const data = JSON.parse(decodeURIComponent(jsonStr));
             let evts = data.evts;
+            if (evts.length > 0 && evts[evts.length - 1].evento === 'Tránsito') evts.pop(); 
 
-            if (evts.length > 0 && evts[evts.length - 1].evento === 'Tránsito') {
-                evts.pop(); 
-            }
-
-            await db.from('units').update({ estado: 'circulando' }).eq('id', data.id_unidad_vieja);
-            await db.from('choferes').update({ estado: 'activo' }).eq('id', data.id_chofer);
-
-            const { error } = await db.from('movimientos').update({ eventos_intermedios: evts }).eq('id', data.id).select();
-            if (error) await showModal({ title: 'Error del Sistema', message: error.message, type: 'alert', color: 'rose' });
-            
+            await db.from('movimientos').update({ eventos_intermedios: evts }).eq('id', data.id);
+            await db.from('units').update({ estado: 'circulando', fecha_cambio_estado: new Date().toISOString() }).eq('id', data.id_unidad_vieja);
             cargarDiagramasActivos();
         }
 
-        function toggleUserMenu() {
-            document.getElementById('user-dropdown').classList.toggle('hidden');
-        }
-
-        async function cerrarSesion() {
-            await db.auth.signOut();
-            window.location.href = 'login.html';
-        }
-
+        function toggleUserMenu() { document.getElementById('user-dropdown').classList.toggle('hidden'); }
+        async function cerrarSesion() { await db.auth.signOut(); window.location.href = 'login.html'; }
+        
         document.addEventListener('click', (event) => {
             const btn = document.getElementById('btn-user');
             const dropdown = document.getElementById('user-dropdown');
-            if (btn && dropdown && !btn.contains(event.target) && !dropdown.contains(event.target)) {
-                dropdown.classList.add('hidden');
-            }
+            if (btn && dropdown && !btn.contains(event.target) && !dropdown.contains(event.target)) dropdown.classList.add('hidden');
         });
 
         verificarSesion();
+
+        // 1. Cargamos los datos por primera vez al iniciar
+verificarSesion();
+
+// 2. Escuchamos cambios en vivo (Supabase Realtime)
+const canalFlota = db.channel('cambios-sistema-flota')
+    .on(
+        'postgres_changes', 
+        { event: '*', schema: 'public', table: 'units' }, 
+        (payload) => {
+            console.log('🔄 Cambio detectado en una unidad', payload);
+            // Cuando algo cambia, refrescamos la pantalla automáticamente
+            if (typeof cargarTaller === "function") cargarTaller();
+            if (typeof cargarDiagramasActivos === "function") cargarDiagramasActivos();
+        }
+    )
+    .on(
+        'postgres_changes', 
+        { event: '*', schema: 'public', table: 'movimientos' }, 
+        (payload) => {
+            console.log('🔄 Cambio detectado en un movimiento', payload);
+            // Cuando algo cambia, refrescamos la pantalla automáticamente
+            if (typeof cargarTaller === "function") cargarTaller();
+            if (typeof cargarDiagramasActivos === "function") cargarDiagramasActivos();
+        }
+    )
+    .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+            console.log('🟢 Conectado al sistema en tiempo real');
+        }
+    });
     </script>
 </body>
 </html>

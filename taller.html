@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Taller y Mantenimiento</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-200 min-h-screen flex flex-col font-sans">
+    
+    <header class="bg-slate-900 text-white shadow-md z-20 flex flex-col md:flex-row items-center justify-between px-6 py-3 border-b-4 border-orange-500 font-sans">
+        <div class="w-full md:w-1/3 flex justify-center md:justify-start items-center mb-3 md:mb-0">
+            <h1 class="text-xl font-black tracking-widest text-white uppercase">SISTEMA FLOTA</h1>
+        </div>
+
+        <div class="w-full md:w-1/3 flex justify-center mb-3 md:mb-0">
+            <nav class="flex gap-2 bg-slate-800 p-1.5 rounded-lg shadow-inner">
+                <a href="Index.html" class="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-700 text-sm font-bold rounded flex items-center transition tracking-wider">INICIA</a>
+                <a href="gestion-diagramas.html" class="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-700 text-sm font-bold rounded flex items-center transition tracking-wider">GESTIÓN</a>
+                <a href="taller.html" class="px-4 py-2 bg-orange-600 text-white text-sm font-bold rounded shadow-md flex items-center pointer-events-none transition tracking-wider">TALLER</a>
+            </nav>
+        </div>
+
+        <div class="w-full md:w-1/3 flex justify-center md:justify-end items-center gap-3">
+            <div class="relative">
+                <button onclick="toggleUserMenu()" id="btn-user" class="text-sm font-bold bg-slate-800 hover:bg-slate-700 px-4 py-1.5 rounded text-slate-300 border border-slate-700 transition duration-200 flex items-center outline-none cursor-pointer">
+                    <span id="status-indicator">Verificando...</span>
+                </button>
+                <div id="user-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded shadow-xl py-1 z-50">
+                    <button onclick="cerrarSesion()" class="w-full text-left px-4 py-3 text-sm text-rose-400 hover:bg-slate-700 hover:text-rose-300 font-bold transition duration-200">
+                        Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 p-6 overflow-y-auto">
+        <div class="max-w-5xl mx-auto space-y-8">
+            <section>
+                <h2 class="text-xl font-black text-slate-800 mb-4 border-b-2 border-slate-300 pb-2 uppercase tracking-wide">Tránsito</h2>
+                <div id="contenedor-transitos" class="space-y-4"></div>
+            </section>
+
+            <section>
+                <h2 class="text-xl font-black text-slate-800 mb-4 border-b-2 border-slate-300 pb-2 uppercase tracking-wide">Unidades en Reparación</h2>
+                <div id="contenedor-reparaciones" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        const db = supabase.createClient('https://laspqhmkrbmuxfgmnudf.supabase.co', 'sb_publishable_HowwuqG31WUNjO6vAjxZmQ_yRSzV-0d');
+        let opcionesUnidades = '<option value="">Dejar sin asignar (Delegar a Gestión)</option>';
+        let operadorActual = "";
+
+        function calcularTiempoTranscurrido(fechaISO) {
+            if (!fechaISO) return "Sin registro";
+            const diffMs = new Date() - new Date(fechaISO);
+            const minutos = Math.floor(diffMs / (1000 * 60));
+            const horas = Math.floor(minutos / 60);
+            const dias = Math.floor(horas / 24);
+            if (dias > 0) return `${dias}d ${horas % 24}h ${minutos % 60}m`;
+            if (horas > 0) return `${horas}h ${minutos % 60}m`;
+            return `${minutos % 60} min`;
+        }
+
+        async function verificarSesion() {
+            const { data: { session } } = await db.auth.getSession();
+            if (!session) window.location.href = 'login.html';
+            else {
+                operadorActual = session.user.email;
+                document.getElementById('status-indicator').innerText = operadorActual;
+                cargarTaller();
+            }
+        }
+
+        async function cargarTaller() {
+            const { data: libres } = await db.from('units').select('id, tractor').eq('estado', 'disponible');
+            opcionesUnidades = '<option value="">Dejar sin asignar (Delegar a Gestión)</option>';
+            libres?.forEach(u => opcionesUnidades += `<option value="${u.id}">${u.tractor}</option>`);
+
+            const { data: diagramas, error: errDiag } = await db.from('movimientos')
+                .select('id, fecha_inicio, eventos_intermedios, id_chofer, id_unidad, units(tractor, estado, fecha_cambio_estado), choferes(nombre)')
+                .eq('estado_diagrama', 'abierto');
+            
+            if (errDiag) console.error("Error cargando base de datos:", errDiag);
+            
+            const transitos = diagramas?.filter(d => d.units?.estado === 'reparacion en transito') || [];
+            const { data: reparaciones } = await db.from('units').select('*').eq('estado', 'reparacion');
+
+            renderTransitos(transitos);
+            renderReparaciones(reparaciones || []);
+        }
+
+        function renderTransitos(lista) {
+            const cont = document.getElementById('contenedor-transitos');
+            cont.innerHTML = lista.length === 0 ? '<p class="text-slate-500 font-bold italic">No hay vehículos en tránsito.</p>' : '';
+
+            lista.forEach(diag => {
+                const tiempoParado = calcularTiempoTranscurrido(diag.units?.fecha_cambio_estado);
+                
+                let evts = diag.eventos_intermedios || [];
+                if (typeof evts === 'string') { try { evts = JSON.parse(evts); } catch(e) { evts = []; } }
+                
+                const transitEvents = evts.filter(e => e.evento === 'Tránsito');
+                const ultimoEvento = transitEvents.length > 0 ? transitEvents[transitEvents.length - 1] : {};
+                const motivo = ultimoEvento.motivo || 'Motivo no especificado por Operaciones';
+
+                const jsonStr = encodeURIComponent(JSON.stringify({ 
+                    id: diag.id, id_unidad_vieja: diag.id_unidad, id_chofer: diag.id_chofer, evts: evts 
+                }));
+
+                cont.innerHTML += `
+                    <div class="bg-white rounded-xl shadow p-5 border-l-4 border-orange-500">
+                        <div class="flex flex-col md:flex-row justify-between items-start mb-4 gap-4">
+                            <div class="flex-1">
+                                <h3 class="text-2xl font-black text-slate-800">${diag.units?.tractor}</h3>
+                                <p class="font-bold text-slate-500 uppercase text-xs mt-1">Viaje Detenido: <span class="text-slate-700">${diag.choferes?.nombre}</span></p>
+                                <p class="text-sm font-bold text-orange-800 mt-2 bg-orange-100/60 p-2 rounded border border-orange-200">
+                                    Motivo: <span class="font-medium">${motivo}</span>
+                                </p>
+                            </div>
+                            <span class="bg-orange-100 text-orange-700 font-bold px-3 py-1 rounded text-xs uppercase tracking-wide border border-orange-300 whitespace-nowrap">
+                                Tiempo: ${tiempoParado}
+                            </span>
+                        </div>
+                        
+                        <div class="w-full bg-slate-50 p-4 border border-slate-200 rounded-lg">
+                            <div class="flex flex-col md:flex-row gap-4 mb-4">
+                                <div class="flex-1">
+                                    <label class="text-xs font-bold text-slate-500 uppercase">Estado de la Unidad</label>
+                                    <select id="sel-rotura-${diag.id}" class="w-full mt-1 p-2 border border-slate-300 rounded outline-none focus:ring-2 focus:ring-orange-400 text-sm font-bold text-slate-700" onchange="toggleNuevaUnidad('${diag.id}')">
+                                        <option value="reparada">Reparada (Misma unidad vuelve a circular)</option>
+                                        <option value="mas_tiempo">Requiere más tiempo (Pasa a Reparación)</option>
+                                    </select>
+                                </div>
+                                <div class="flex-1 hidden" id="div-chofer-${diag.id}">
+                                    <label class="text-xs font-bold text-slate-500 uppercase">Asignar Nueva Unidad para Viaje</label>
+                                    <select id="sel-unidad-${diag.id}" class="w-full mt-1 p-2 border border-slate-300 rounded bg-white outline-none focus:ring-2 focus:ring-blue-400 text-sm font-bold text-slate-700 shadow-inner">
+                                        ${opcionesUnidades}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex justify-end border-t border-slate-200 pt-3 mt-2">
+                                <button onclick="resolverTransito('${jsonStr}', '${diag.id}')" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 px-6 rounded shadow transition uppercase tracking-widest text-sm">
+                                    Ejecutar Selección
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderReparaciones(lista) {
+            const cont = document.getElementById('contenedor-reparaciones');
+            cont.innerHTML = lista.length === 0 ? '<p class="text-slate-500 font-bold italic col-span-2">No hay unidades en reparación prolongada.</p>' : '';
+
+            lista.forEach(u => {
+                const tiempoParado = calcularTiempoTranscurrido(u.fecha_cambio_estado);
+                cont.innerHTML += `
+                    <div class="bg-white rounded-xl shadow p-5 border-t-4 border-rose-500 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="text-xl font-black text-slate-800">${u.tractor}</h3>
+                                <span class="bg-rose-100 text-rose-700 font-bold px-2 py-0.5 rounded text-[10px] tracking-wide border border-rose-300 uppercase">Reparación</span>
+                            </div>
+                            <p class="text-xs font-bold text-slate-500 mb-4 uppercase">Inmovilizado: <span class="text-slate-700">${tiempoParado}</span></p>
+                        </div>
+                        <button onclick="darDeAlta('${u.id}')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded shadow transition uppercase tracking-wide text-xs mt-2">
+                            Alta (A Disponibles)
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        function toggleNuevaUnidad(id) {
+            const selRotura = document.getElementById(`sel-rotura-${id}`).value;
+            const divChofer = document.getElementById(`div-chofer-${id}`);
+            if (selRotura === 'mas_tiempo') divChofer.classList.remove('hidden');
+            else divChofer.classList.add('hidden');
+        }
+
+        async function resolverTransito(jsonStr, diag_id) {
+            const data = JSON.parse(decodeURIComponent(jsonStr));
+            const decisionUnidad = document.getElementById(`sel-rotura-${diag_id}`).value;
+            
+            const nuevoEvento = { evento: "Intervención de Taller", accion: decisionUnidad, operador: operadorActual, fecha: new Date().toISOString() };
+            const evts = [...data.evts, nuevoEvento];
+
+            if (decisionUnidad === 'reparada') {
+                await db.from('movimientos').update({ eventos_intermedios: evts }).eq('id', data.id);
+                await db.from('units').update({ estado: 'circulando', fecha_cambio_estado: new Date().toISOString() }).eq('id', data.id_unidad_vieja);
+            } 
+            else if (decisionUnidad === 'mas_tiempo') {
+                const nuevaUnidadId = document.getElementById(`sel-unidad-${diag_id}`).value;
+                
+                await db.from('units').update({ estado: 'reparacion', fecha_cambio_estado: new Date().toISOString() }).eq('id', data.id_unidad_vieja);
+                
+                if (nuevaUnidadId) {
+                    await db.from('units').update({ estado: 'circulando', fecha_cambio_estado: new Date().toISOString() }).eq('id', nuevaUnidadId);
+                    await db.from('movimientos').update({ id_unidad: nuevaUnidadId, eventos_intermedios: evts }).eq('id', data.id);
+                } else {
+                    await db.from('movimientos').update({ eventos_intermedios: evts }).eq('id', data.id);
+                }
+            }
+            cargarTaller();
+        }
+
+        async function darDeAlta(id_unidad) {
+            if(!confirm("¿La unidad ya está reparada y operativa? (Pasará a estado Disponible)")) return;
+            await db.from('units').update({ estado: 'disponible', fecha_cambio_estado: new Date().toISOString() }).eq('id', id_unidad);
+            cargarTaller();
+        }
+
+        function toggleUserMenu() { document.getElementById('user-dropdown').classList.toggle('hidden'); }
+        async function cerrarSesion() { await db.auth.signOut(); window.location.href = 'login.html'; }
+        
+        document.addEventListener('click', (event) => {
+            const btn = document.getElementById('btn-user');
+            const dropdown = document.getElementById('user-dropdown');
+            if (btn && dropdown && !btn.contains(event.target) && !dropdown.contains(event.target)) dropdown.classList.add('hidden');
+        });
+
+        verificarSesion();
+
+        // Suscripción Realtime para actualización automática
+        const canalFlota = db.channel('cambios-taller')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'units' }, () => {
+                if (typeof cargarTaller === "function") cargarTaller();
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'movimientos' }, () => {
+                if (typeof cargarTaller === "function") cargarTaller();
+            })
+            .subscribe();
+    </script>
+</body>
+</html>
