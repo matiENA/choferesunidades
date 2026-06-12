@@ -1,0 +1,62 @@
+Esta es una **Nota Técnica de Arquitectura** diseñada para que tú (o quien herede el proyecto) entienda por qué tomamos las decisiones actuales y cómo realizar la migración definitiva a la base de datos sin romper la operación.
+
+---
+
+# Nota Técnica: Estrategia de Pareo de Unidades y Choferes
+
+**Estado:** Fase MVP (Frontend-Driven)
+
+**Proyecto:** Sistema de Flota UTE
+
+**Fecha de Revisión:** 12 de junio de 2026
+
+## 1. Justificación del Diseño Actual (Frontend-Driven)
+
+Actualmente, la lógica de pareo (qué tractor puede manejar qué chofer según el producto) reside en el **Frontend (JavaScript)** mediante un objeto de matriz de compatibilidad (`matrizPareo`).
+
+* **¿Por qué hoy?** Permite iterar la lógica de negocios con velocidad extrema. La empresa cambia sus reglas de pareo constantemente y no podíamos permitirnos reescribir funciones de base de datos cada vez que un chofer habilitado para *GLP* cambia de producto.
+* **Limitación:** Al no estar en DB, la lógica de validación es "de cliente". Si alguien con conocimientos técnicos hace un `cURL` o una petición directa a Supabase (salteando la web), podría romper las reglas de pareo.
+
+## 2. Plan de Migración a Backend (Hacia la Base de Datos)
+
+Cuando el sistema alcance una madurez donde las reglas de negocio sean estables (ej: "Un chofer de Metanol nunca podrá manejar GLP"), la lógica debe migrarse a la base de datos para garantizar **Integridad Referencial**.
+
+### Paso a paso para la migración futura:
+
+1. **Crear Tabla de Habilidades (Habilitaciones):**
+No debemos seguir usando campos de texto (`producto` / `c_producto`). Se requiere una tabla normalizada:
+* `tabla_habilidades` (id, id_chofer, id_producto)
+* `tabla_compatibilidades` (id_producto_a, id_producto_b)
+
+
+2. **Migrar la Lógica a Triggers (PostgreSQL):**
+El bloqueo no debe ser visual (Frontend), sino de servidor. Se debe implementar un **Trigger `BEFORE INSERT OR UPDATE**` en la tabla `movimientos`:
+```sql
+-- Ejemplo conceptual de trigger de validación
+CREATE FUNCTION validar_pareo() RETURNS TRIGGER AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM habilitaciones WHERE id_chofer = NEW.id_chofer AND id_producto = (SELECT producto FROM units WHERE id = NEW.id_unidad)) THEN
+    RAISE EXCEPTION 'El chofer no está habilitado para esta unidad/producto';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+```
+
+
+3. **Interfaz de Administración:**
+El frontend ya no contendría la matriz `matrizPareo`, sino que consultaría a un endpoint de la API para obtener las unidades/choferes permitidos según el perfil del usuario logueado.
+
+## 3. Riesgos y Consideraciones
+
+* **Independencia de Operación:** La migración debe ser transparente. El despachante no puede notar el cambio; el sistema debe seguir bloqueando el botón "INICIAR VIAJE" si el pareo es inválido.
+* **Dependencia con Google Sheets:** La inyección en Excel mediante Webhook es actualmente un "añadido". Si migramos a DB, el Webhook debe ser disparado por un **Edge Function de Supabase** (lógica de servidor) y no por el navegador, garantizando que aunque el operador cierre la pestaña, el dato llegue al Excel.
+
+---
+
+### Recomendación para el mantenimiento
+
+Mantener este documento junto al código fuente. Si en el futuro alguien intenta modificar la `matrizPareo` en el código y el sistema se vuelve lento o inmanejable, sabrán que es la señal técnica para ejecutar el **Paso 2 (Migración a Triggers)**.
+
+*Esta nota sirve como "seguro de vida" para evitar deuda técnica acumulada.*
