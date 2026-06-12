@@ -2,8 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Diagrama</title>
+    <title>Taller y Mantenimiento</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -11,25 +10,23 @@
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        
-        .hide-scroll::-webkit-scrollbar { display: none; }
-        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-slate-200 h-screen flex flex-col font-sans overflow-hidden">
+<body class="bg-slate-200 min-h-screen flex flex-col font-sans">
     
-    <header class="bg-slate-900 text-white shadow-md z-20 flex flex-col md:flex-row items-center justify-between px-6 py-3 border-b-4 border-indigo-600 font-sans">
+    <header class="bg-slate-900 text-white shadow-md z-20 flex flex-col md:flex-row items-center justify-between px-6 py-3 border-b-4 border-orange-500 font-sans">
         <div class="w-full md:w-1/3 flex justify-center md:justify-start items-center mb-3 md:mb-0">
             <h1 class="text-xl font-black tracking-widest text-white uppercase">SISTEMA FLOTA</h1>
         </div>
         <div class="w-full md:w-1/3 flex justify-center mb-3 md:mb-0">
             <nav class="flex gap-2 bg-slate-800 p-1.5 rounded-lg shadow-inner">
-                <a href="index.html" class="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded shadow-md flex items-center tracking-wider pointer-events-none transition duration-200">INICIA</a>
+                <a href="index.html" class="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-700 text-sm font-bold rounded flex items-center tracking-wider transition duration-200">INICIA</a>
                 <a href="gestion-diagramas.html" class="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-700 text-sm font-bold rounded flex items-center tracking-wider transition duration-200">GESTIÓN</a>
-                <a href="taller.html" class="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-700 text-sm font-bold rounded flex items-center tracking-wider transition duration-200">TALLER</a>
+                <a href="taller.html" class="px-4 py-2 bg-orange-600 text-white text-sm font-bold rounded shadow-md flex items-center tracking-wider pointer-events-none transition duration-200">TALLER</a>
             </nav>
         </div>
         <div class="w-full md:w-1/3 flex justify-center md:justify-end items-center gap-4">
+            <button onclick="cargarTaller()" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded text-xs font-bold transition duration-200 tracking-widest uppercase">Refrescar</button>
             <span id="status-indicator" class="text-xs font-bold text-slate-400 tracking-widest uppercase hidden md:inline">Verificando...</span>
             <button onclick="cerrarSesion()" class="text-xs font-bold bg-slate-800 hover:bg-rose-600 border border-slate-700 hover:border-rose-600 px-3 py-1.5 rounded text-slate-300 hover:text-white transition duration-200 uppercase tracking-widest">
                 Cerrar Sesión
@@ -37,323 +34,34 @@
         </div>
     </header>
 
-    <div class="bg-[#1e293b] px-6 py-3 flex items-center gap-4 shadow-md z-10 border-b border-slate-700 overflow-x-auto hide-scroll">
-        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">FILTRAR SERVICIO:</span>
-        <div id="contenedor-filtros-producto" class="flex items-center gap-2 shrink-0">
-            </div>
-    </div>
+    <main class="flex-1 p-6 overflow-y-auto">
+        <div class="max-w-5xl mx-auto space-y-8">
+            <section>
+                <h2 class="text-xl font-black text-slate-800 mb-4 border-b-2 border-slate-300 pb-2 uppercase tracking-wide">Tránsito</h2>
+                <div id="contenedor-transitos" class="space-y-4"></div>
+            </section>
 
-    <main class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 p-4 min-h-0">
-        
-        <section class="bg-white rounded-xl shadow flex flex-col border-t-4 border-slate-700 min-h-0 overflow-hidden">
-            <div class="p-4 border-b bg-slate-50 flex flex-col gap-3">
-                <h2 class="text-lg font-bold text-slate-800 uppercase tracking-wide">Unidades Disponibles</h2>
-                <input type="text" id="search-unidades" placeholder="Buscar por patente..." class="w-full p-2 border border-slate-300 rounded bg-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition shadow-sm" oninput="aplicarFiltros()">
-            </div>
-            <div class="flex-1 overflow-y-auto p-4 space-y-3" id="contenedor-unidades"></div>
-        </section>
-
-        <section class="bg-white rounded-xl shadow flex flex-col border-t-4 border-slate-700 min-h-0 overflow-hidden">
-            <div class="p-4 border-b bg-slate-50 flex flex-col gap-3">
-                <h2 class="text-lg font-bold text-slate-800 uppercase tracking-wide">Choferes</h2>
-                <input type="text" id="search-choferes" placeholder="Buscar por apellido o nombre..." class="w-full p-2 border border-slate-300 rounded bg-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition shadow-sm" oninput="aplicarFiltros()">
-            </div>
-            <div class="flex-1 overflow-y-auto p-4 space-y-3" id="contenedor-choferes"></div>
-        </section>
-
+            <section>
+                <h2 class="text-xl font-black text-slate-800 mb-4 border-b-2 border-slate-300 pb-2 uppercase tracking-wide">Unidades en Reparación</h2>
+                <div id="contenedor-reparaciones" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </section>
+        </div>
     </main>
-
-    <footer class="bg-white border-t p-4 shadow z-10">
-        <div class="max-w-xl mx-auto">
-            <button onclick="confirmarSalida()" id="btn-inicia" disabled class="w-full disabled:opacity-40 bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-xl shadow-md text-lg transition tracking-widest">
-                INICIAR VIAJE
-            </button>
-        </div>
-    </footer>
-
-    <div id="modal-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
-        <div id="modal-box" class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 transform scale-95 transition-transform duration-300 border-t-4 border-indigo-500">
-            <h3 id="modal-title" class="text-xl font-black text-slate-800 tracking-wide mb-2 uppercase"></h3>
-            <p id="modal-message" class="text-sm font-bold text-slate-500 mb-4"></p>
-            
-            <div id="modal-date-container" class="mb-6">
-                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Fecha a registrar en Excel</label>
-                <input type="date" id="modal-date" class="w-full p-3 border border-slate-300 rounded bg-slate-50 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition shadow-sm font-medium text-slate-700 cursor-pointer">
-            </div>
-
-            <div class="flex justify-end gap-3">
-                <button id="modal-btn-cancel" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded transition tracking-wider text-sm uppercase">Cancelar</button>
-                <button id="modal-btn-confirm" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded shadow transition tracking-wider text-sm uppercase">Confirmar Salida</button>
-            </div>
-        </div>
-    </div>
 
     <script>
         const db = supabase.createClient('https://laspqhmkrbmuxfgmnudf.supabase.co', 'sb_publishable_HowwuqG31WUNjO6vAjxZmQ_yRSzV-0d');
-        const URL_WEBHOOK_EXCEL = "AQUÍ_PEGA_TU_URL_DE_APPS_SCRIPT"; 
-        
-        let state = { unidad: null, chofer: null };
-        let filtroActual = 'TODOS'; 
-        let dataUnidades = [];
-        let dataChoferes = [];
+        let opcionesUnidades = '<option value="">Dejar sin asignar (Delegar a Gestión)</option>';
         let operadorActual = "";
 
-        const matrizPareo = {
-            'METANOL': ['METANOL', 'CAMPO'],
-            'CAMPO': ['METANOL', 'CAMPO', 'ABASTECEDORES', 'YPF'],
-            'ABASTECEDORES': ['CAMPO', 'ABASTECEDORES', 'YPF'],
-            'LIVIANO': ['LIVIANO', 'GLP'],
-            'GLP': ['GLP']
-        };
-
-        function obtenerCompatibles(prod) {
-            if (!prod) return [];
-            return matrizPareo[prod] || [prod];
-        }
-
-        async function cargarDatos() {
-            const { data: units } = await db.from('units').select('*').eq('estado', 'disponible');
-            const { data: chofs } = await db.from('choferes').select('*').eq('estado', 'inactivo');
-            
-            dataUnidades = units || [];
-            dataChoferes = chofs || [];
-
-            const productosSet = new Set();
-            Object.keys(matrizPareo).forEach(p => productosSet.add(p));
-            dataUnidades.forEach(u => { if(u.producto) productosSet.add(u.producto.trim().toUpperCase()); });
-
-            renderizarFiltros(Array.from(productosSet).sort());
-            aplicarFiltros();
-        }
-
-        function renderizarFiltros(productos) {
-            const cont = document.getElementById('contenedor-filtros-producto');
-            let html = `<button onclick="seleccionarFiltro('TODOS')" data-prod="TODOS" class="filtro-btn px-5 py-1.5 rounded-full text-xs font-black tracking-widest uppercase transition-all duration-200 border-2 border-[#34a853] bg-[#34a853] text-white shadow-md scale-105">TODOS</button>`;
-            
-            productos.forEach(prod => {
-                if(!prod) return;
-                html += `<button onclick="seleccionarFiltro('${prod}')" data-prod="${prod}" class="filtro-btn px-5 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase transition-all duration-200 border-2 border-slate-600 bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 shadow-sm">${prod}</button>`;
-            });
-            
-            cont.innerHTML = html;
-        }
-
-        function seleccionarFiltro(prod) {
-            filtroActual = prod;
-            state.unidad = null;
-            state.chofer = null;
-            document.getElementById('btn-inicia').disabled = true;
-
-            aplicarFiltros();
-            actualizarEstilosBotones();
-        }
-
-        function actualizarEstilosBotones() {
-            const compatibles = filtroActual !== 'TODOS' ? obtenerCompatibles(filtroActual) : [];
-
-            document.querySelectorAll('.filtro-btn').forEach(btn => {
-                const btnProd = btn.getAttribute('data-prod');
-
-                if (btnProd === filtroActual) {
-                    btn.className = `filtro-btn px-5 py-1.5 rounded-full text-xs font-black tracking-widest uppercase transition-all duration-200 border-2 border-[#34a853] bg-[#34a853] text-white shadow-md scale-105`;
-                } else if (compatibles.includes(btnProd)) {
-                    btn.className = `filtro-btn px-5 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase transition-all duration-200 border-2 border-[#f59e0b] bg-[#f59e0b]/10 text-[#f59e0b] shadow-sm ring-1 ring-[#f59e0b]/50`;
-                } else {
-                    btn.className = `filtro-btn px-5 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase transition-all duration-200 border-2 border-slate-600 bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 shadow-sm`;
-                }
-            });
-        }
-
-        function aplicarFiltros() {
-            const searchU = document.getElementById('search-unidades').value.toLowerCase();
-            const searchC = document.getElementById('search-choferes').value.toLowerCase();
-
-            // Filtrar Unidades 
-            const unidadesFiltradas = dataUnidades.filter(u => {
-                const prodUnidad = u.producto ? u.producto.trim().toUpperCase() : '';
-                const coincideProducto = (filtroActual === 'TODOS' || prodUnidad === filtroActual);
-                return coincideProducto && u.tractor.toLowerCase().includes(searchU);
-            });
-
-            // Filtrar Choferes mostrando TAMBIÉN los compatibles según la matriz
-            const choferesFiltrados = dataChoferes.filter(c => {
-                const prodChofer = c.c_producto ? c.c_producto.trim().toUpperCase() : '';
-                const compatibles = filtroActual !== 'TODOS' ? obtenerCompatibles(filtroActual) : [];
-                const coincideProducto = (filtroActual === 'TODOS' || compatibles.includes(prodChofer));
-                return coincideProducto && c.nombre.toLowerCase().includes(searchC);
-            });
-
-            // ORDENAMIENTO DE CHOFERES: Exactos arriba, compatibles abajo
-            choferesFiltrados.sort((a, b) => {
-                if (filtroActual === 'TODOS') return a.nombre.localeCompare(b.nombre);
-                
-                const prodA = a.c_producto ? a.c_producto.trim().toUpperCase() : '';
-                const prodB = b.c_producto ? b.c_producto.trim().toUpperCase() : '';
-                
-                const aExacto = prodA === filtroActual;
-                const bExacto = prodB === filtroActual;
-                
-                if (aExacto && !bExacto) return -1; // 'a' sube
-                if (!aExacto && bExacto) return 1;  // 'b' sube
-                return a.nombre.localeCompare(b.nombre); // Si son iguales, por orden alfabético
-            });
-
-            renderizarUnidades(unidadesFiltradas);
-            renderizarChoferes(choferesFiltrados);
-        }
-
-        function renderizarUnidades(lista) {
-            const contU = document.getElementById('contenedor-unidades');
-            contU.innerHTML = '';
-            if (lista.length === 0) return contU.innerHTML = '<p class="text-sm text-slate-400 text-center mt-4 font-bold">No hay unidades para este filtro.</p>';
-
-            const cSelected = dataChoferes.find(x => x.id === state.chofer);
-            const prodChofer = cSelected && cSelected.c_producto ? cSelected.c_producto.trim().toUpperCase() : null;
-
-            lista.forEach(u => {
-                const prodUnidad = u.producto ? u.producto.trim().toUpperCase() : '';
-                
-                let esCompatible = true;
-                if (prodChofer && prodUnidad) {
-                    const permitidos = obtenerCompatibles(prodUnidad);
-                    esCompatible = permitidos.includes(prodChofer);
-                }
-
-                const opacidadBloqueo = esCompatible ? '' : 'opacity-40 grayscale pointer-events-none bg-slate-100 border-slate-200';
-                const estiloSeleccion = (state.unidad === u.id) ? 'border-indigo-600 bg-indigo-50 ring-2 ring-indigo-200' : 'border-slate-300 bg-white hover:border-indigo-400';
-
-                let badgeVencimiento = '';
-                const hoy = new Date();
-                const vtv = new Date(u.vtv_tr);
-                // Si la VTV está vencida, inyectamos el badge (con whitespace-nowrap para que no se parta en celulares)
-                if (vtv < hoy) badgeVencimiento = '<span class="bg-red-100 text-red-700 text-[10px] px-2 py-1 rounded font-black shadow-sm border border-red-200 uppercase whitespace-nowrap">Vencida</span>';
-
-                // NUEVO DISEÑO HORIZONTAL PARA UNIDADES
-                contU.innerHTML += `
-                <div onclick="seleccionar('unidad', '${u.id}')" class="cursor-pointer border-2 ${estiloSeleccion} ${opacidadBloqueo} p-3 rounded-lg flex flex-row items-center justify-between gap-3 transition">
-                    <span class="font-black text-slate-800 text-lg truncate flex-1" title="${u.tractor}">${u.tractor}</span>
-                    <div class="flex items-center gap-2 shrink-0">
-                        ${badgeVencimiento}
-                        <span class="text-[10px] font-bold bg-slate-200 px-2 py-1 rounded uppercase text-slate-700 border border-slate-300 shadow-inner whitespace-nowrap">${prodUnidad || 'S/D'}</span>
-                    </div>
-                </div>`;
-            });
-        }
-
-        function renderizarChoferes(lista) {
-            const contC = document.getElementById('contenedor-choferes');
-            contC.innerHTML = '';
-            if (lista.length === 0) return contC.innerHTML = '<p class="text-sm text-slate-400 text-center mt-4 font-bold">No hay personal para este filtro.</p>';
-
-            const uSelected = dataUnidades.find(x => x.id === state.unidad);
-            const prodUnidad = uSelected && uSelected.producto ? uSelected.producto.trim().toUpperCase() : null;
-            const permitidosPorUnidad = prodUnidad ? obtenerCompatibles(prodUnidad) : null;
-
-            lista.forEach(c => {
-                const prodChofer = c.c_producto ? c.c_producto.trim().toUpperCase() : '';
-                
-                let esCompatible = true;
-                if (permitidosPorUnidad && prodChofer) {
-                    esCompatible = permitidosPorUnidad.includes(prodChofer);
-                }
-
-                const opacidadBloqueo = esCompatible ? '' : 'opacity-40 grayscale pointer-events-none bg-slate-100 border-slate-200';
-                const estiloSeleccion = (state.chofer === c.id) ? 'border-indigo-600 bg-indigo-50 ring-2 ring-indigo-200' : 'border-slate-300 bg-white hover:border-indigo-400';
-
-                // DISEÑO HORIZONTAL PARA LOS CHOFERES
-                contC.innerHTML += `
-                <div onclick="seleccionar('chofer', '${c.id}')" class="cursor-pointer border-2 ${estiloSeleccion} ${opacidadBloqueo} p-3 rounded-lg flex flex-row items-center justify-between gap-3 transition">
-                    <span class="font-bold text-slate-700 text-md truncate flex-1" title="${c.nombre}">${c.nombre}</span>
-                    <span class="text-[10px] font-bold bg-slate-200 px-2 py-1 rounded uppercase text-slate-700 border border-slate-300 shadow-inner shrink-0 whitespace-nowrap">${prodChofer || 'S/D'}</span>
-                </div>`;
-            });
-        }
-
-        function seleccionar(tipo, id) {
-            if (state[tipo] === id) {
-                state[tipo] = null;
-            } else {
-                state[tipo] = id;
-            }
-            
-            aplicarFiltros(); 
-            document.getElementById('btn-inicia').disabled = !(state.unidad && state.chofer);
-        }
-
-        // ==========================================
-        // SISTEMA DE CONFIRMACIÓN Y WEBHOOK
-        // ==========================================
-
-        function showModalDate() {
-            return new Promise((resolve) => {
-                const overlay = document.getElementById('modal-overlay');
-                const box = document.getElementById('modal-box');
-                const dateEl = document.getElementById('modal-date');
-                const btnCancel = document.getElementById('modal-btn-cancel');
-                const btnConfirm = document.getElementById('modal-btn-confirm');
-
-                document.getElementById('modal-title').innerText = "Confirmar Asignación";
-                document.getElementById('modal-message').innerText = "Seleccione la fecha en la que este movimiento debe impactar en el reporte.";
-
-                const hoy = new Date();
-                dateEl.value = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
-
-                overlay.classList.remove('hidden');
-                setTimeout(() => { overlay.classList.remove('opacity-0'); box.classList.replace('scale-95', 'scale-100'); }, 10);
-
-                const closeModal = (result) => {
-                    overlay.classList.add('opacity-0'); box.classList.replace('scale-100', 'scale-95');
-                    setTimeout(() => { overlay.classList.add('hidden'); resolve(result); }, 300);
-                };
-
-                btnConfirm.onclick = () => {
-                    if (!dateEl.value) return dateEl.classList.add('border-rose-500');
-                    closeModal(dateEl.value);
-                };
-                btnCancel.onclick = () => closeModal(false);
-            });
-        }
-
-        async function confirmarSalida() {
-            const fechaSeleccionada = await showModalDate();
-            if (!fechaSeleccionada) return; 
-
-            document.getElementById('btn-inicia').innerText = "GUARDANDO...";
-            document.getElementById('btn-inicia').classList.add('opacity-50', 'pointer-events-none');
-
-            const partes = fechaSeleccionada.split('-');
-            const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-            const fechaExcel = `${partes[2]} ${meses[parseInt(partes[1], 10) - 1]} ${partes[0]}`;
-            const fechaDB = new Date();
-            fechaDB.setFullYear(partes[0], parseInt(partes[1], 10) - 1, partes[2]);
-
-            const tractorTexto = dataUnidades.find(u => u.id === state.unidad).tractor;
-            const choferTexto = dataChoferes.find(c => c.id === state.chofer).nombre;
-
-            try {
-                await db.from('movimientos').insert([{
-                    id_unidad: state.unidad,
-                    id_chofer: state.chofer,
-                    operador: operadorActual,
-                    fecha_inicio: fechaDB.toISOString()
-                }]);
-
-                await db.from('units').update({ estado: 'circulando', fecha_cambio_estado: new Date().toISOString() }).eq('id', state.unidad);
-                await db.from('choferes').update({ estado: 'circulando' }).eq('id', state.chofer);
-
-                if (URL_WEBHOOK_EXCEL !== "AQUÍ_PEGA_TU_URL_DE_APPS_SCRIPT") {
-                    fetch(URL_WEBHOOK_EXCEL, {
-                        method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ tractor: tractorTexto, chofer: choferTexto, fecha: fechaExcel })
-                    }).catch(e => console.error("Error Webhook:", e));
-                }
-
-                location.reload();
-
-            } catch (error) {
-                alert("Error crítico conectando a la base de datos.");
-                location.reload();
-            }
+        function calcularTiempoTranscurrido(fechaISO) {
+            if (!fechaISO) return "Sin registro";
+            const diffMs = new Date() - new Date(fechaISO);
+            const minutos = Math.floor(diffMs / (1000 * 60));
+            const horas = Math.floor(minutos / 60);
+            const dias = Math.floor(horas / 24);
+            if (dias > 0) return `${dias}d ${horas % 24}h ${minutos % 60}m`;
+            if (horas > 0) return `${horas}h ${minutos % 60}m`;
+            return `${minutos % 60} min`;
         }
 
         async function verificarSesion() {
@@ -361,21 +69,170 @@
             if (!session) window.location.href = 'login.html';
             else {
                 operadorActual = session.user.email;
-                document.getElementById('status-indicator').innerText = "👤 " + operadorActual;
-                cargarDatos(); 
+                document.getElementById('status-indicator').innerText = operadorActual;
+                cargarTaller();
             }
         }
 
-        async function cerrarSesion() {
-            await db.auth.signOut();
-            window.location.href = 'login.html';
+        async function cargarTaller() {
+            const { data: libres } = await db.from('units').select('id, tractor').eq('estado', 'disponible');
+            opcionesUnidades = '<option value="">Dejar sin asignar (Delegar a Gestión)</option>';
+            libres?.forEach(u => opcionesUnidades += `<option value="${u.id}">${u.tractor}</option>`);
+
+            const { data: diagramas, error: errDiag } = await db.from('movimientos')
+                .select('id, fecha_inicio, eventos_intermedios, id_chofer, id_unidad, units(tractor, estado, fecha_cambio_estado), choferes(nombre)')
+                .eq('estado_diagrama', 'abierto');
+            
+            if (errDiag) console.error("Error cargando base de datos:", errDiag);
+            
+            const transitos = diagramas?.filter(d => d.units?.estado === 'reparacion en transito') || [];
+            const { data: reparaciones } = await db.from('units').select('*').eq('estado', 'reparacion');
+
+            renderTransitos(transitos);
+            renderReparaciones(reparaciones || []);
         }
+
+        function renderTransitos(lista) {
+            const cont = document.getElementById('contenedor-transitos');
+            cont.innerHTML = lista.length === 0 ? '<p class="text-slate-500 font-bold italic">No hay vehículos en tránsito.</p>' : '';
+
+            lista.forEach(diag => {
+                const tiempoParado = calcularTiempoTranscurrido(diag.units?.fecha_cambio_estado);
+                
+                let evts = diag.eventos_intermedios || [];
+                if (typeof evts === 'string') { try { evts = JSON.parse(evts); } catch(e) { evts = []; } }
+                
+                const transitEvents = evts.filter(e => e.evento === 'Tránsito');
+                const ultimoEvento = transitEvents.length > 0 ? transitEvents[transitEvents.length - 1] : {};
+                const motivo = ultimoEvento.motivo || 'Motivo no especificado por Operaciones';
+
+                const jsonStr = encodeURIComponent(JSON.stringify({ 
+                    id: diag.id, id_unidad_vieja: diag.id_unidad, id_chofer: diag.id_chofer, evts: evts 
+                }));
+
+                cont.innerHTML += `
+                    <div class="bg-white rounded-xl shadow p-5 border-l-4 border-orange-500">
+                        <div class="flex flex-col md:flex-row justify-between items-start mb-4 gap-4">
+                            <div class="flex-1">
+                                <h3 class="text-2xl font-black text-slate-800">${diag.units?.tractor}</h3>
+                                <p class="font-bold text-slate-500 uppercase text-xs mt-1">Viaje Detenido: <span class="text-slate-700">${diag.choferes?.nombre}</span></p>
+                                <p class="text-sm font-bold text-orange-800 mt-2 bg-orange-100/60 p-2 rounded border border-orange-200">
+                                    Motivo: <span class="font-medium">${motivo}</span>
+                                </p>
+                            </div>
+                            <span class="bg-orange-100 text-orange-700 font-bold px-3 py-1 rounded text-xs uppercase tracking-wide border border-orange-300 whitespace-nowrap">
+                                Tiempo: ${tiempoParado}
+                            </span>
+                        </div>
+                        
+                        <div class="w-full bg-slate-50 p-4 border border-slate-200 rounded-lg">
+                            <div class="flex flex-col md:flex-row gap-4 mb-4">
+                                <div class="flex-1">
+                                    <label class="text-xs font-bold text-slate-500 uppercase">Estado de la Unidad</label>
+                                    <select id="sel-rotura-${diag.id}" class="w-full mt-1 p-2 border border-slate-300 rounded outline-none focus:ring-2 focus:ring-orange-400 text-sm font-bold text-slate-700" onchange="toggleNuevaUnidad('${diag.id}')">
+                                        <option value="reparada">Reparada (Misma unidad vuelve a circular)</option>
+                                        <option value="mas_tiempo">Requiere más tiempo (Pasa a Reparación)</option>
+                                    </select>
+                                </div>
+                                <div class="flex-1 hidden" id="div-chofer-${diag.id}">
+                                    <label class="text-xs font-bold text-slate-500 uppercase">Asignar Nueva Unidad para Viaje</label>
+                                    <select id="sel-unidad-${diag.id}" class="w-full mt-1 p-2 border border-slate-300 rounded bg-white outline-none focus:ring-2 focus:ring-blue-400 text-sm font-bold text-slate-700 shadow-inner">
+                                        ${opcionesUnidades}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex justify-end border-t border-slate-200 pt-3 mt-2">
+                                <button onclick="resolverTransito('${jsonStr}', '${diag.id}')" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 px-6 rounded shadow transition uppercase tracking-widest text-sm">
+                                    Ejecutar Selección
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderReparaciones(lista) {
+            const cont = document.getElementById('contenedor-reparaciones');
+            cont.innerHTML = lista.length === 0 ? '<p class="text-slate-500 font-bold italic col-span-2">No hay unidades en reparación prolongada.</p>' : '';
+
+            lista.forEach(u => {
+                const tiempoParado = calcularTiempoTranscurrido(u.fecha_cambio_estado);
+                cont.innerHTML += `
+                    <div class="bg-white rounded-xl shadow p-5 border-t-4 border-rose-500 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="text-xl font-black text-slate-800">${u.tractor}</h3>
+                                <span class="bg-rose-100 text-rose-700 font-bold px-2 py-0.5 rounded text-[10px] tracking-wide border border-rose-300 uppercase">Reparación</span>
+                            </div>
+                            <p class="text-xs font-bold text-slate-500 mb-4 uppercase">Inmovilizado: <span class="text-slate-700">${tiempoParado}</span></p>
+                        </div>
+                        <button onclick="darDeAlta('${u.id}')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded shadow transition uppercase tracking-wide text-xs mt-2">
+                            Alta (A Disponibles)
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        function toggleNuevaUnidad(id) {
+            const selRotura = document.getElementById(`sel-rotura-${id}`).value;
+            const divChofer = document.getElementById(`div-chofer-${id}`);
+            if (selRotura === 'mas_tiempo') divChofer.classList.remove('hidden');
+            else divChofer.classList.add('hidden');
+        }
+
+        async function resolverTransito(jsonStr, diag_id) {
+            const data = JSON.parse(decodeURIComponent(jsonStr));
+            const decisionUnidad = document.getElementById(`sel-rotura-${diag_id}`).value;
+            
+            const nuevoEvento = { evento: "Intervención de Taller", accion: decisionUnidad, operador: operadorActual, fecha: new Date().toISOString() };
+            const evts = [...data.evts, nuevoEvento];
+
+            if (decisionUnidad === 'reparada') {
+                await db.from('movimientos').update({ eventos_intermedios: evts }).eq('id', data.id);
+                await db.from('units').update({ estado: 'circulando', fecha_cambio_estado: new Date().toISOString() }).eq('id', data.id_unidad_vieja);
+            } 
+            else if (decisionUnidad === 'mas_tiempo') {
+                const nuevaUnidadId = document.getElementById(`sel-unidad-${diag_id}`).value;
+                
+                await db.from('units').update({ estado: 'reparacion', fecha_cambio_estado: new Date().toISOString() }).eq('id', data.id_unidad_vieja);
+                
+                if (nuevaUnidadId) {
+                    await db.from('units').update({ estado: 'circulando', fecha_cambio_estado: new Date().toISOString() }).eq('id', nuevaUnidadId);
+                    await db.from('movimientos').update({ id_unidad: nuevaUnidadId, eventos_intermedios: evts }).eq('id', data.id);
+                } else {
+                    await db.from('movimientos').update({ eventos_intermedios: evts }).eq('id', data.id);
+                }
+            }
+            cargarTaller();
+        }
+
+        async function darDeAlta(id_unidad) {
+            if(!confirm("¿La unidad ya está reparada y operativa? (Pasará a estado Disponible)")) return;
+            await db.from('units').update({ estado: 'disponible', fecha_cambio_estado: new Date().toISOString() }).eq('id', id_unidad);
+            cargarTaller();
+        }
+
+        function toggleUserMenu() { document.getElementById('user-dropdown').classList.toggle('hidden'); }
+        async function cerrarSesion() { await db.auth.signOut(); window.location.href = 'login.html'; }
+        
+        document.addEventListener('click', (event) => {
+            const btn = document.getElementById('btn-user');
+            const dropdown = document.getElementById('user-dropdown');
+            if (btn && dropdown && !btn.contains(event.target) && !dropdown.contains(event.target)) dropdown.classList.add('hidden');
+        });
 
         verificarSesion();
 
-        db.channel('cambios-index')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'units' }, () => { cargarDatos(); })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'choferes' }, () => { cargarDatos(); })
+        // Suscripción Realtime para actualización automática
+        const canalFlota = db.channel('cambios-taller')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'units' }, () => {
+                if (typeof cargarTaller === "function") cargarTaller();
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'movimientos' }, () => {
+                if (typeof cargarTaller === "function") cargarTaller();
+            })
             .subscribe();
     </script>
 </body>
