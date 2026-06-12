@@ -1,0 +1,48 @@
+Este error es un clásico de las bases de datos y es muy fácil de solucionar.
+
+### ¿Por qué pasó esto? (El Diagnóstico)
+
+El error dice: `null value in column "semi" violates not-null constraint`.
+Cuando creaste tu tabla `units`, le pusiste una regla estricta a la columna `semi` que dice **`NOT NULL`**. Esto significa: *"Por ningún motivo permitas que un tractor se guarde sin un semi asignado"*.
+
+Sin embargo, en el CSV o los datos que cargaste en `temp_prod`, **el tractor `AA266DV` tiene la columna del semi vacía** (vino como un valor nulo). Al intentar actualizarlo, Supabase bloqueó la operación para proteger tu regla.
+
+---
+
+### LA SOLUCIÓN
+
+Tienes dos caminos. Elige el que mejor se adapte a la realidad de tu logística:
+
+#### Opción A: Parche SQL inteligente (Recomendada)
+
+Si es normal que a veces un tractor quede "solo" (bobtail) o el dato venga vacío en el Excel, podemos decirle al código SQL que, si el semi viene vacío, le ponga un guion `'-'` automáticamente para que Supabase no se queje.
+
+Reemplaza tu código de actualización por este:
+
+```sql
+UPDATE public.units u
+SET 
+    -- Si t.semi viene vacío (NULL), ponle un '-', si no, ponle el valor de t.semi
+    semi = COALESCE(t.semi, '-'), 
+    producto = t.producto
+FROM public.temp_prod t
+WHERE u.tractor = t.tractor;
+
+```
+
+*(Otra alternativa si prefieres que conserve el semi viejo en lugar de poner un guion, es usar: `semi = COALESCE(t.semi, u.semi)`).*
+
+#### Opción B: Cambiar la regla de la base de datos
+
+Si en tu empresa es perfectamente legal y normal que la columna `semi` quede en blanco, entonces deberías quitarle esa restricción a la tabla para siempre.
+
+Si prefieres esto, corre este comando una sola vez en el SQL Editor:
+
+```sql
+ALTER TABLE public.units ALTER COLUMN semi DROP NOT NULL;
+
+```
+
+Y luego vuelve a correr el `UPDATE` normal que te pasé antes.
+
+**Te sugiero la Opción A (con el guion `'-'`)** porque mantiene tu base de datos prolija y evita que otras partes del código frontend fallen al intentar leer un texto que no existe.
