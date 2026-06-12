@@ -11,11 +11,15 @@
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Oculta la scrollbar en los filtros pero permite deslizar */
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-slate-200 h-screen flex flex-col font-sans overflow-hidden">
     
-<header class="bg-slate-900 text-white shadow-md z-20 flex flex-col md:flex-row items-center justify-between px-6 py-3 border-b-4 border-indigo-600 font-sans">
+    <header class="bg-slate-900 text-white shadow-md z-20 flex flex-col md:flex-row items-center justify-between px-6 py-3 border-b-4 border-indigo-600 font-sans">
         <div class="w-full md:w-1/3 flex justify-center md:justify-start items-center mb-3 md:mb-0">
             <h1 class="text-xl font-black tracking-widest text-white uppercase">SISTEMA FLOTA</h1>
         </div>
@@ -34,11 +38,10 @@
         </div>
     </header>
 
-    <div class="bg-slate-800 px-6 py-2 flex items-center gap-4 shadow-md z-10 border-b border-slate-700">
-        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Filtro Operativo:</span>
-        <select id="filtro-producto" onchange="aplicarFiltros()" class="bg-slate-700 text-white text-sm font-bold px-3 py-1.5 rounded border border-slate-600 outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
-            <option value="TODOS">TODOS LOS PRODUCTOS</option>
-            </select>
+    <div class="bg-[#1e293b] px-6 py-3 flex items-center gap-4 shadow-md z-10 border-b border-slate-700 overflow-x-auto hide-scroll">
+        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">FILTRAR:</span>
+        <div id="contenedor-filtros-producto" class="flex items-center gap-2 shrink-0">
+            </div>
     </div>
 
     <main class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 p-4 min-h-0">
@@ -72,54 +75,75 @@
     <script>
         const db = supabase.createClient('https://laspqhmkrbmuxfgmnudf.supabase.co', 'sb_publishable_HowwuqG31WUNjO6vAjxZmQ_yRSzV-0d');
         
-        // Estado global para mantener los datos en memoria y poder filtrar rápido
         let state = { unidad: null, chofer: null };
+        let filtroActual = 'TODOS'; // Nuevo estado para el filtro horizontal
         let dataUnidades = [];
         let dataChoferes = [];
         let operadorActual = "";
 
-async function cargarDatos() {
-            // Descargamos todo
+        async function cargarDatos() {
             const { data: units } = await db.from('units').select('*').eq('estado', 'disponible');
             const { data: chofs } = await db.from('choferes').select('*').eq('estado', 'inactivo');
             
             dataUnidades = units || [];
             dataChoferes = chofs || [];
 
-            // Detectamos todos los productos únicos existentes
             const productosSet = new Set();
             dataUnidades.forEach(u => { if(u.producto) productosSet.add(u.producto.trim().toUpperCase()); });
-            
-            // ATENCIÓN AQUÍ: Cambiamos a c_producto para los choferes
             dataChoferes.forEach(c => { if(c.c_producto) productosSet.add(c.c_producto.trim().toUpperCase()); });
 
-            const selectProducto = document.getElementById('filtro-producto');
-            productosSet.forEach(prod => {
-                selectProducto.innerHTML += `<option value="${prod}">${prod}</option>`;
-            });
-
-            // Disparamos el primer renderizado
+            // Generamos los botones dinámicamente
+            renderizarFiltros(Array.from(productosSet).sort());
             aplicarFiltros();
         }
 
-        // Esta función se activa cada vez que tipeás algo o cambiás el producto
+        // MOTOR DE BOTONES HORIZONTALES (PILLS)
+        function renderizarFiltros(productos) {
+            const cont = document.getElementById('contenedor-filtros-producto');
+            
+            // Botón por defecto (Estado Activo Inicial)
+            let html = `<button onclick="seleccionarFiltro('TODOS')" id="btn-filtro-TODOS" class="filtro-btn px-5 py-1.5 rounded-full text-xs font-black tracking-widest uppercase transition-all duration-200 border-2 border-[#34a853] bg-[#34a853] text-white shadow-md scale-105">TODOS</button>`;
+            
+            productos.forEach(prod => {
+                // Reemplazamos los espacios por guiones para que el ID sea válido en HTML
+                const idProd = prod.replace(/\s+/g, '-');
+                // Estado Inactivo base
+                html += `<button onclick="seleccionarFiltro('${prod}')" id="btn-filtro-${idProd}" class="filtro-btn px-5 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase transition-all duration-200 border-2 border-slate-600 bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 shadow-sm">${prod}</button>`;
+            });
+            
+            cont.innerHTML = html;
+        }
+
+        function seleccionarFiltro(prod) {
+            filtroActual = prod;
+            const idSelected = prod === 'TODOS' ? 'TODOS' : prod.replace(/\s+/g, '-');
+            
+            // Actualizar diseño de botones visualmente
+            document.querySelectorAll('.filtro-btn').forEach(btn => {
+                if (btn.id === `btn-filtro-${idSelected}`) {
+                    btn.className = `filtro-btn px-5 py-1.5 rounded-full text-xs font-black tracking-widest uppercase transition-all duration-200 border-2 border-[#34a853] bg-[#34a853] text-white shadow-md scale-105`;
+                } else {
+                    btn.className = `filtro-btn px-5 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase transition-all duration-200 border-2 border-slate-600 bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-200 shadow-sm`;
+                }
+            });
+            
+            aplicarFiltros();
+        }
+
         function aplicarFiltros() {
-            const filtroProd = document.getElementById('filtro-producto').value;
             const searchU = document.getElementById('search-unidades').value.toLowerCase();
             const searchC = document.getElementById('search-choferes').value.toLowerCase();
 
-            // Filtramos Unidades (usa .producto)
             const unidadesFiltradas = dataUnidades.filter(u => {
                 const prodUnidad = u.producto ? u.producto.trim().toUpperCase() : '';
-                const coincideProducto = (filtroProd === 'TODOS' || prodUnidad === filtroProd);
+                const coincideProducto = (filtroActual === 'TODOS' || prodUnidad === filtroActual);
                 const coincideTexto = u.tractor.toLowerCase().includes(searchU);
                 return coincideProducto && coincideTexto;
             });
 
-            // Filtramos Choferes (usa .c_producto)
             const choferesFiltrados = dataChoferes.filter(c => {
                 const prodChofer = c.c_producto ? c.c_producto.trim().toUpperCase() : '';
-                const coincideProducto = (filtroProd === 'TODOS' || prodChofer === filtroProd);
+                const coincideProducto = (filtroActual === 'TODOS' || prodChofer === filtroActual);
                 const coincideTexto = c.nombre.toLowerCase().includes(searchC);
                 return coincideProducto && coincideTexto;
             });
@@ -166,7 +190,6 @@ async function cargarDatos() {
 
                 const badgeEstado = `<span class="text-[10px] font-bold uppercase bg-slate-100 border border-slate-200 px-2 py-1 rounded text-slate-500">${u.estado}</span>`;
                 
-                // Mantenemos la selección visual si el usuario ya lo había clickeado
                 const estiloSeleccion = state.unidad === u.id ? 'border-indigo-600 bg-indigo-50 ring-2 ring-indigo-200' : 'border-slate-200 bg-white';
 
                 contU.innerHTML += `
@@ -192,7 +215,6 @@ async function cargarDatos() {
             lista.forEach(c => {
                 const badgeEstadoChofer = `<span class="text-[10px] font-bold uppercase bg-slate-100 border border-slate-200 px-2 py-1 rounded text-slate-500">${c.estado}</span>`;
                 
-                // Mantenemos la selección visual
                 const estiloSeleccion = state.chofer === c.id ? 'border-indigo-600 bg-indigo-50 ring-2 ring-indigo-200' : 'border-slate-200 bg-white';
 
                 contC.innerHTML += `
@@ -205,7 +227,6 @@ async function cargarDatos() {
 
         function seleccionar(tipo, id) {
             state[tipo] = id;
-            // Al hacer clic, simplemente forzamos un re-renderizado para que se pinten los bordes
             aplicarFiltros(); 
             document.getElementById('btn-inicia').disabled = !(state.unidad && state.chofer);
         }
@@ -213,11 +234,11 @@ async function cargarDatos() {
         async function verificarSesion() {
             const { data: { session } } = await db.auth.getSession();
             if (!session) {
-                window.location.href = 'login.html'; // Lo patea al login si no tiene sesión
+                window.location.href = 'login.html';
             } else {
                 operadorActual = session.user.email;
                 document.getElementById('status-indicator').innerText = "👤 " + operadorActual;
-                cargarDatos(); // Solo carga los datos si está logueado
+                cargarDatos(); 
             }
         }
         
@@ -226,107 +247,15 @@ async function cargarDatos() {
             await db.from('movimientos').insert([{ 
                 id_unidad: state.unidad, 
                 id_chofer: state.chofer,
-                operador: operadorActual // <--- Estampa quién abrió el viaje
+                operador: operadorActual
             }]);
             location.reload(); 
         }  
-       
-        async function cargarDiagramasActivos() {
-            const { data: libres } = await db.from('units').select('id, tractor').eq('estado', 'disponible');
-            opcionesUnidades = '<option value="">Seleccione nueva unidad...</option>';
-            libres?.forEach(u => opcionesUnidades += `<option value="${u.id}">${u.tractor}</option>`);
-
-            const { data: diagramas } = await db.from('movimientos')
-                .select('id, fecha_inicio, eventos_intermedios, id_chofer, id_unidad, units(tractor, estado), choferes(nombre, estado)')
-                .eq('estado_diagrama', 'abierto')
-                .order('fecha_inicio', { ascending: false });
-
-            const cont = document.getElementById('contenedor-diagramas');
-            cont.innerHTML = '';
-
-            diagramas?.forEach(diag => {
-                const eventos = diag.eventos_intermedios || [];
-                const estaEnTransito = eventos.length > 0 && eventos[eventos.length - 1].evento === 'Tránsito';
-                
-                const jsonStr = encodeURIComponent(JSON.stringify({ 
-                    id: diag.id, 
-                    id_unidad_vieja: diag.id_unidad,
-                    id_chofer: diag.id_chofer,
-                    evts: eventos 
-                }));
-
-                let botonesHTML = '';
-                
-                if (estaEnTransito) {
-                    botonesHTML = `
-                        <div class="w-full bg-orange-50 p-4 border border-orange-200 rounded-lg mt-4 relative">
-                            <button onclick="deshacerTransito('${jsonStr}')" class="absolute top-3 right-3 text-orange-400 hover:text-red-600 transition" title="Deshacer reporte por error">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            </button>
-
-                            <h4 class="text-orange-800 font-bold mb-3 tracking-wide uppercase text-sm pr-8">Unidad en Taller / Esperando</h4>
-                            <div class="flex flex-col md:flex-row gap-4">
-                                <div class="flex-1">
-                                    <label class="text-xs font-bold text-slate-500 uppercase">¿Qué hace el Chofer?</label>
-                                    <select id="sel-chofer-${diag.id}" class="w-full mt-1 p-2 border rounded outline-none focus:ring-2 focus:ring-orange-400 text-sm font-medium text-slate-700 shadow-sm" onchange="toggleNuevaUnidad('${diag.id}')">
-                                        <option value="espera">Espera unidad</option>
-                                        <option value="nueva_unidad">Cambia a Nueva Unidad</option>
-                                    </select>
-                                    <select id="sel-unidad-${diag.id}" class="w-full mt-2 p-2 border rounded hidden bg-blue-50 border-blue-300 outline-none focus:ring-2 focus:ring-blue-400 text-sm font-medium text-slate-700 shadow-sm">
-                                        ${opcionesUnidades}
-                                    </select>
-                                </div>
-                                <div class="flex-1">
-                                    <label class="text-xs font-bold text-slate-500 uppercase">¿Estado de Unidad Rota?</label>
-                                    <select id="sel-rotura-${diag.id}" class="w-full mt-1 p-2 border rounded outline-none focus:ring-2 focus:ring-orange-400 text-sm font-medium text-slate-700 shadow-sm">
-                                        <option value="alta">Alta Rápida (Vuelve a Circulando)</option>
-                                        <option value="prolongada">Reparación Prolongada (Queda en Base)</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="flex justify-end mt-4">
-                                <button onclick="resolverTransito('${jsonStr}', '${diag.id}')" class="w-full md:w-auto bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded shadow transition uppercase tracking-widest text-sm">
-                                    Aplicar Resolución
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    botonesHTML = `
-                        <div class="flex gap-2 w-full md:w-auto flex-wrap justify-end mt-4 md:mt-0 ml-auto">
-                            <button onclick="marcarTransito('${jsonStr}')" class="bg-orange-100 hover:bg-orange-200 text-orange-800 font-bold py-2 px-4 rounded border border-orange-300 transition uppercase tracking-wide text-xs shadow-sm">Reportar Tránsito</button>
-                            <button onclick="terminar('${diag.id}')" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-4 rounded shadow transition uppercase tracking-wide text-xs">Terminar Diagrama</button>
-                        </div>
-                    `;
-                }
-
-                const bordeColor = estaEnTransito ? 'border-orange-500' : 'border-emerald-500';
-
-                cont.innerHTML += `
-                    <div class="bg-white rounded-xl shadow p-5 mb-4 border-l-4 ${bordeColor} flex flex-col w-full group">
-                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center w-full">
-                            <div class="flex-1">
-                                <h3 class="text-2xl font-black text-slate-800 tracking-wide">${diag.units?.tractor}</h3>
-                                <p class="font-bold text-slate-500 uppercase text-xs mt-1 tracking-wider">CHOFER: <span class="text-slate-700">${diag.choferes?.nombre}</span></p>
-                                <p class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Inicio: ${new Date(diag.fecha_inicio).toLocaleString()}</p>
-                            </div>
-                            ${!estaEnTransito ? botonesHTML : ''}
-                        </div>
-                        ${estaEnTransito ? botonesHTML : ''}
-                    </div>
-                `;
-            });
-        }
-
-        function toggleUserMenu() {
-            document.getElementById('user-dropdown').classList.toggle('hidden');
-        }
-
+        
         async function cerrarSesion() {
             await db.auth.signOut();
             window.location.href = 'login.html';
         }
-
 
         verificarSesion();
     </script>
